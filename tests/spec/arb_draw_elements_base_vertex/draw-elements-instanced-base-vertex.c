@@ -33,7 +33,7 @@
  * color modifier and an y offset.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 300, piglit_height = 300;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

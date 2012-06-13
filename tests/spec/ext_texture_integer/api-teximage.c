@@ -28,7 +28,7 @@
  * Tests GL_EXT_texture_integer's error behavior with glTexImage2D().
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

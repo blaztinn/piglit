@@ -22,7 +22,8 @@
  */
 
 #if defined(_WIN32)
-#include <windows.h>
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
 #endif
 
 #include <assert.h>
@@ -34,10 +35,22 @@
 
 #include "config.h"
 #if defined(HAVE_SYS_TIME_H) && defined(HAVE_SYS_RESOURCE_H) && defined(HAVE_SETRLIMIT)
-#include <sys/time.h>
-#include <sys/resource.h>
-#define USE_SETRLIMIT
+# include <sys/time.h>
+# include <sys/resource.h>
+# define USE_SETRLIMIT
 #endif
+
+#if defined(HAVE_FCNTL_H) && defined(HAVE_SYS_STAT_H) && defined(HAVE_SYS_TYPES_H) && defined(HAVE_UNISTD_H)
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <fcntl.h>
+# include <unistd.h>
+#else
+# define USE_STDIO
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "piglit-util.h"
 
@@ -92,54 +105,6 @@ int asprintf(char **strp, const char *fmt, ...)
 #endif /* _WIN32 */
 
 
-void piglit_glutInit(int argc, char **argv)
-{
-	glutInit(&argc, argv);
-
-#	if defined(USE_WAFFLE)
-#		if defined(USE_OPENGL)
-			glutInitAPIMask(GLUT_OPENGL_BIT);
-#		elif defined(USE_OPENGL_ES1)
-			glutInitAPIMask(GLUT_OPENGL_ES1_BIT);
-#		elif defined(USE_OPENGL_ES2)
-			glutInitAPIMask(GLUT_OPENGL_ES2_BIT);
-#		else
-#			error
-#		endif
-#	endif
-}
-
-bool piglit_is_gles()
-{
-	const char *version_string = (const char *) glGetString(GL_VERSION);
-	return strncmp("OpenGL ES ", version_string, 10) == 0;
-}
-
-int piglit_get_gl_version()
-{
-	const char *version_string = (const char *) glGetString(GL_VERSION);
-	const char *version_number_string;
-	int scanf_count;
-	int major;
-	int minor;
-
-	/* skip to version number */
-	if (strncmp("OpenGL ES ", version_string, 10) == 0)
-		version_number_string = version_string + 10;
-	else
-		version_number_string = version_string;
-
-	/* Interpret version number */
-	scanf_count = sscanf(version_number_string, "%i.%i", &major, &minor);
-	if (scanf_count != 2) {
-		printf("Unable to interpret GL_VERSION string: %s\n",
-		       version_string);
-		piglit_report_result(PIGLIT_FAIL);
-		exit(1);
-	}
-	return 10*major+minor;
-}
-
 bool piglit_is_extension_in_string(const char *haystack, const char *needle)
 {
 	const unsigned needle_len = strlen(needle);
@@ -169,165 +134,6 @@ bool piglit_is_extension_in_string(const char *haystack, const char *needle)
 	return false;
 }
 
-bool piglit_is_extension_supported(const char *name)
-{
-	const char *const extensions =
-		(const char*) glGetString(GL_EXTENSIONS);
-
-	return piglit_is_extension_in_string(extensions, name);
-}
-
-void piglit_require_gl_version(int required_version_times_10)
-{
-	if (piglit_is_gles() ||
-	    piglit_get_gl_version() < required_version_times_10) {
-		printf("Test requires GL version %g\n",
-		       required_version_times_10 / 10.0);
-		piglit_report_result(PIGLIT_SKIP);
-		exit(1);
-	}
-}
-
-void piglit_require_extension(const char *name)
-{
-	if (!piglit_is_extension_supported(name)) {
-		printf("Test requires %s\n", name);
-		piglit_report_result(PIGLIT_SKIP);
-		exit(1);
-	}
-}
-
-void piglit_require_not_extension(const char *name)
-{
-	if (piglit_is_extension_supported(name)) {
-		piglit_report_result(PIGLIT_SKIP);
-		exit(1);
-	}
-}
-
-const char* piglit_get_gl_error_name(GLenum error)
-{
-#define CASE(x) case x: return #x; 
-    switch (error) {
-    CASE(GL_INVALID_ENUM)
-    CASE(GL_INVALID_OPERATION)
-    CASE(GL_INVALID_VALUE)
-    CASE(GL_NO_ERROR)
-    CASE(GL_OUT_OF_MEMORY)
-    /* enums that are not available everywhere */
-#if defined(GL_STACK_OVERFLOW)
-    CASE(GL_STACK_OVERFLOW)
-#endif
-#if defined(GL_STACK_UNDERFLOW)
-    CASE(GL_STACK_UNDERFLOW)
-#endif
-#if defined(GL_INVALID_FRAMEBUFFER_OPERATION)
-    CASE(GL_INVALID_FRAMEBUFFER_OPERATION)
-#endif
-    default:
-        return "(unrecognized error)";
-    }
-#undef CASE
-}
-
-GLboolean
-piglit_check_gl_error_(GLenum expected_error, const char *file, unsigned line)
-{
-	GLenum actual_error;
-
-	actual_error = glGetError();
-	if (actual_error == expected_error) {
-		return GL_TRUE;
-	}
-
-	/*
-	 * If the lookup of the error's name is successful, then print
-	 *     Unexpected GL error: NAME 0xHEX
-	 * Else, print
-	 *     Unexpected GL error: 0xHEX
-	 */
-	printf("Unexpected GL error: %s 0x%x\n",
-               piglit_get_gl_error_name(actual_error), actual_error);
-        printf("(Error at %s:%u)\n", file, line);
-
-	/* Print the expected error, but only if an error was really expected. */
-	if (expected_error != GL_NO_ERROR) {
-		printf("Expected GL error: %s 0x%x\n",
-		piglit_get_gl_error_name(expected_error), expected_error);
-        }
-
-	return GL_FALSE;
-}
-
-void piglit_reset_gl_error(void)
-{
-	while (glGetError() != GL_NO_ERROR) {
-		/* empty */
-	}
-}
-
-/* These texture coordinates should have 1 or -1 in the major axis selecting
- * the face, and a nearly-1-or-negative-1 value in the other two coordinates
- * which will be used to produce the s,t values used to sample that face's
- * image.
- */
-GLfloat cube_face_texcoords[6][4][3] = {
-	{ /* GL_TEXTURE_CUBE_MAP_POSITIVE_X */
-		{1.0,  0.99,  0.99},
-		{1.0,  0.99, -0.99},
-		{1.0, -0.99, -0.99},
-		{1.0, -0.99,  0.99},
-	},
-	{ /* GL_TEXTURE_CUBE_MAP_POSITIVE_Y */
-		{-0.99, 1.0, -0.99},
-		{ 0.99, 1.0, -0.99},
-		{ 0.99, 1.0,  0.99},
-		{-0.99, 1.0,  0.99},
-	},
-	{ /* GL_TEXTURE_CUBE_MAP_POSITIVE_Z */
-		{-0.99,  0.99, 1.0},
-		{-0.99, -0.99, 1.0},
-		{ 0.99, -0.99, 1.0},
-		{ 0.99,  0.99, 1.0},
-	},
-	{ /* GL_TEXTURE_CUBE_MAP_NEGATIVE_X */
-		{-1.0,  0.99, -0.99},
-		{-1.0,  0.99,  0.99},
-		{-1.0, -0.99,  0.99},
-		{-1.0, -0.99, -0.99},
-	},
-	{ /* GL_TEXTURE_CUBE_MAP_NEGATIVE_Y */
-		{-0.99, -1.0,  0.99},
-		{-0.99, -1.0, -0.99},
-		{ 0.99, -1.0, -0.99},
-		{ 0.99, -1.0,  0.99},
-	},
-	{ /* GL_TEXTURE_CUBE_MAP_NEGATIVE_Z */
-		{ 0.99,  0.99, -1.0},
-		{-0.99,  0.99, -1.0},
-		{-0.99, -0.99, -1.0},
-		{ 0.99, -0.99, -1.0},
-	},
-};
-
-const char *cube_face_names[6] = {
-	"POSITIVE_X",
-	"POSITIVE_Y",
-	"POSITIVE_Z",
-	"NEGATIVE_X",
-	"NEGATIVE_Y",
-	"NEGATIVE_Z",
-};
-
-const GLenum cube_face_targets[6] = {
-	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-};
-
 /** Returns the line in the program string given the character position. */
 int FindLine(const char *program, int position)
 {
@@ -339,6 +145,31 @@ int FindLine(const char *program, int position)
 			line++;
 	}
 	return line;
+}
+
+/* Merges the PASS/FAIL/SKIP for @subtest into the overall result
+ * @all.
+ *
+ * The @all should start out initialized to PIGLIT_SKIP.
+ */
+void
+piglit_merge_result(enum piglit_result *all, enum piglit_result subtest)
+{
+	switch (subtest) {
+	case PIGLIT_FAIL:
+		*all = PIGLIT_FAIL;
+		break;
+	case PIGLIT_WARN:
+		if (*all == PIGLIT_SKIP || *all == PIGLIT_PASS)
+			*all = PIGLIT_WARN;
+		break;
+	case PIGLIT_PASS:
+		if (*all == PIGLIT_SKIP)
+			*all = PIGLIT_PASS;
+		break;
+	case PIGLIT_SKIP:
+		break;
+	}
 }
 
 void
@@ -365,26 +196,109 @@ piglit_report_result(enum piglit_result result)
 	}
 }
 
-float piglit_tolerance[4] = { 0.01, 0.01, 0.01, 0.01 };
-
-void
-piglit_set_tolerance_for_bits(int rbits, int gbits, int bbits, int abits)
+char *piglit_load_text_file(const char *file_name, unsigned *size)
 {
-	int bits[4] = {rbits, gbits, bbits, abits};
-	int i;
+	char *text = NULL;
 
-	for (i = 0; i < 4; i++) {
-		if (bits[i] < 2) {
-			/* Don't try to validate channels when there's only 1
-			 * bit of precision (or none).
-			 */
-			piglit_tolerance[i] = 1.0;
-		} else {
-			piglit_tolerance[i] = 3.0 / (1 << bits[i]);
+#if defined(USE_STDIO)
+	FILE *fp;
+
+# ifdef HAVE_FOPEN_S
+	errno_t err;
+
+	if (file_name == NULL) {
+		return NULL;
+	}
+
+	err = fopen_s(&fp, file_name, "r");
+
+	if (err || (fp == NULL)) {
+		return NULL;
+	}
+# else
+	fp = fopen(file_name, "r");
+	if (fp == NULL) {
+		return NULL;
+	}
+# endif
+
+	if (fseek(fp, 0, SEEK_END) == 0) {
+		size_t len = (size_t) ftell(fp);
+		rewind(fp);
+
+		text = malloc(len + 1);
+		if (text != NULL) {
+			size_t total_read = 0;
+
+			do {
+				size_t bytes = fread(text + total_read, 1,
+						     len - total_read, fp);
+
+				total_read += bytes;
+				if (feof(fp)) {
+					break;
+				}
+
+				if (ferror(fp)) {
+					free(text);
+					text = NULL;
+					break;
+				}
+			} while (total_read < len);
+
+			if (text != NULL) {
+				text[total_read] = '\0';
+			}
+
+			if (size != NULL) {
+				*size = total_read;
+			}
 		}
 	}
-}
 
+	fclose(fp);
+	return text;
+#else
+	struct stat st;
+	int fd = open(file_name, O_RDONLY);
+
+	if (fd < 0) {
+		return NULL;
+	}
+
+	if (fstat(fd, & st) == 0) {
+		ssize_t total_read = 0;
+
+		text = malloc(st.st_size + 1);
+		if (text != NULL) {
+			do {
+				ssize_t bytes = read(fd, text + total_read,
+						     st.st_size - total_read);
+				if (bytes < 0) {
+					free(text);
+					text = NULL;
+					break;
+				}
+
+				if (bytes == 0) {
+					break;
+				}
+
+				total_read += bytes;
+			} while (total_read < st.st_size);
+
+			text[total_read] = '\0';
+			if (size != NULL) {
+				*size = total_read;
+			}
+		}
+	}
+
+	close(fd);
+
+	return text;
+#endif
+}
 
 #ifndef HAVE_STRCHRNUL
 char *strchrnul(const char *s, int c)
@@ -394,7 +308,6 @@ char *strchrnul(const char *s, int c)
 	return (t == NULL) ? ((char *) s + strlen(s)) : t;
 }
 #endif
-
 
 void
 piglit_set_rlimit(unsigned long lim)
@@ -423,118 +336,4 @@ piglit_set_rlimit(unsigned long lim)
 #else
 	printf("Cannot reset rlimit on this platform.\n\n");
 #endif
-}
-
-/* Merges the PASS/FAIL/SKIP for @subtest into the overall result
- * @all.
- *
- * The @all should start out initialized to PIGLIT_SKIP.
- */
-void
-piglit_merge_result(enum piglit_result *all, enum piglit_result subtest)
-{
-	switch (subtest) {
-	case PIGLIT_FAIL:
-		*all = PIGLIT_FAIL;
-		break;
-	case PIGLIT_WARN:
-		if (*all == PIGLIT_SKIP || *all == PIGLIT_PASS)
-			*all = PIGLIT_WARN;
-		break;
-	case PIGLIT_PASS:
-		if (*all == PIGLIT_SKIP)
-			*all = PIGLIT_PASS;
-		break;
-	case PIGLIT_SKIP:
-		break;
-	}
-}
-
-typedef union { GLfloat f; GLint i; } fi_type;
-
-/**
- * Convert a 4-byte float to a 2-byte half float.
- * Based on code from:
- * http://www.opengl.org/discussion_boards/ubb/Forum3/HTML/008786.html
- *
- * Taken over from Mesa.
- */
-unsigned short
-piglit_half_from_float(float val)
-{
-	const fi_type fi = {val};
-	const int flt_m = fi.i & 0x7fffff;
-	const int flt_e = (fi.i >> 23) & 0xff;
-	const int flt_s = (fi.i >> 31) & 0x1;
-	int s, e, m = 0;
-	unsigned short result;
-
-	/* sign bit */
-	s = flt_s;
-
-	/* handle special cases */
-	if ((flt_e == 0) && (flt_m == 0)) {
-		/* zero */
-		/* m = 0; - already set */
-		e = 0;
-	}
-	else if ((flt_e == 0) && (flt_m != 0)) {
-		/* denorm -- denorm float maps to 0 half */
-		/* m = 0; - already set */
-		e = 0;
-	}
-	else if ((flt_e == 0xff) && (flt_m == 0)) {
-		/* infinity */
-		/* m = 0; - already set */
-		e = 31;
-	}
-	else if ((flt_e == 0xff) && (flt_m != 0)) {
-		/* NaN */
-		m = 1;
-		e = 31;
-	}
-	else {
-		/* regular number */
-		const int new_exp = flt_e - 127;
-		if (new_exp < -24) {
-			/* this maps to 0 */
-			/* m = 0; - already set */
-			e = 0;
-		}
-		else if (new_exp < -14) {
-			/* this maps to a denorm */
-			/* 2^-exp_val*/
-			unsigned int exp_val = (unsigned int) (-14 - new_exp);
-
-			e = 0;
-			switch (exp_val) {
-			case 0:
-				/* m = 0; - already set */
-				break;
-			case 1: m = 512 + (flt_m >> 14); break;
-			case 2: m = 256 + (flt_m >> 15); break;
-			case 3: m = 128 + (flt_m >> 16); break;
-			case 4: m = 64 + (flt_m >> 17); break;
-			case 5: m = 32 + (flt_m >> 18); break;
-			case 6: m = 16 + (flt_m >> 19); break;
-			case 7: m = 8 + (flt_m >> 20); break;
-			case 8: m = 4 + (flt_m >> 21); break;
-			case 9: m = 2 + (flt_m >> 22); break;
-			case 10: m = 1; break;
-			}
-		}
-		else if (new_exp > 15) {
-			/* map this value to infinity */
-			/* m = 0; - already set */
-			e = 31;
-		}
-		else {
-			/* regular */
-			e = new_exp + 15;
-			m = flt_m >> 13;
-		}
-	}
-
-	result = (s << 15) | (e << 10) | m;
-	return result;
 }

@@ -27,7 +27,7 @@
 
 /* this test does some basic tests of ARB_vertex_type_2_10_10_10 vbos */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 320, piglit_height = 60;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

@@ -28,7 +28,7 @@
  * LLVMpipe crash which only seems to happen when SSE4.1 is not used.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 400, piglit_height = 400;

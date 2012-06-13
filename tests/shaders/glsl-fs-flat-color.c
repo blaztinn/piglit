@@ -25,7 +25,7 @@
  * \file glsl-fs-flat-color.c
  * Test that gl_Color works correctly with GL_SHADE_MODEL of GL_FLAT
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 30, piglit_height = 30;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

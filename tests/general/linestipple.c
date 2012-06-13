@@ -26,7 +26,7 @@
  * Test basic line stippling functionality.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128, piglit_height = 128;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

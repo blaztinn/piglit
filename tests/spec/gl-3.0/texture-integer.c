@@ -27,7 +27,7 @@
  * Tests OpenGL 3.0 integer textures
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 100, piglit_height = 100;

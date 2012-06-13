@@ -27,7 +27,7 @@
  * GL_UNSIGNED_INT_10F_11F_11F_REV format.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

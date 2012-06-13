@@ -30,7 +30,7 @@
  * Tests that clear accum buffer
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 400;
 int piglit_height = 200;

@@ -28,7 +28,7 @@
  * GL_MAX_TEXTURE_LAYERS layers.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_window_mode = GLUT_DOUBLE | GLUT_RGB | GLUT_ALPHA;
 int piglit_width = 100;

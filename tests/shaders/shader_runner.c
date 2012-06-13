@@ -36,7 +36,7 @@
 #else
 #include <libgen.h>
 #endif
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "piglit-vbo.h"
 
 int piglit_width = 250, piglit_height = 250;

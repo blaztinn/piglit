@@ -36,7 +36,7 @@
  * a stepped gradient being drawn.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 256;
 int piglit_height = 16;

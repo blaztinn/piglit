@@ -32,7 +32,7 @@
  * ARB_draw_buffers and ARB_fragment_program works.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

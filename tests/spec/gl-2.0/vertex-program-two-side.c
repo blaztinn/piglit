@@ -43,7 +43,7 @@
  */
 
 #define _GNU_SOURCE
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100, piglit_height = 100;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

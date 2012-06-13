@@ -29,7 +29,7 @@
  * depth texture would be created before the draw to that texture.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 640;
 int piglit_height = 480;

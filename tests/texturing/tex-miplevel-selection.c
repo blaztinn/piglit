@@ -30,7 +30,7 @@
  * Also tests ARB_shader_texture_lod if requested.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;
 int piglit_width = 900;

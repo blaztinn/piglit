@@ -56,7 +56,7 @@
  * specification and check that impleentations follow that.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

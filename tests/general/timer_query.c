@@ -31,7 +31,7 @@
  * Simple test for GL_EXT_timer_query.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 180, piglit_height = 100;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH;

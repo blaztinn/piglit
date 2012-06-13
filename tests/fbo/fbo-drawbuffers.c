@@ -31,7 +31,7 @@
  * ARB_draw_buffers and fixed function fragment works.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

@@ -32,7 +32,7 @@
  */
 
 #include <string.h>
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 256;
 int piglit_height = 256;

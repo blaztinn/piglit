@@ -33,7 +33,7 @@
  * Bug #27250
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 32, piglit_height = 32;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

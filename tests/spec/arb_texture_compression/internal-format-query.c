@@ -68,7 +68,7 @@
  *     and the texture image will not be compressed by the GL."
  */
 #include <stdarg.h>
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB;

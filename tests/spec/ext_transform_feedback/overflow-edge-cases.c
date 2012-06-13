@@ -41,7 +41,7 @@
  * - GL_PRIMITIVES_GENERATED is set correctly.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 16;
 int piglit_height = 16;

@@ -6,7 +6,7 @@
  * (Prompted by a bug in R300 where the driver ran out of indirections).
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 16 * 16, piglit_height = 11 * 16;
 int piglit_window_mode = GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA;

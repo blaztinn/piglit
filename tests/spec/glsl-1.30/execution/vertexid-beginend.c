@@ -27,7 +27,7 @@
  * Test that gl_VertexID has the correct values.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 70;
 int piglit_height = 30;

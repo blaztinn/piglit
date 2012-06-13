@@ -34,7 +34,7 @@
  * \author Chad Versace <chad.versace@intel.com>
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "hiz/hiz-util.h"
 
 int piglit_width = 400;

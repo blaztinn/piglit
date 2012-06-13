@@ -28,7 +28,7 @@
  * Tests that GLSL 1.30 exposes the GL_MIN/MAX_PROGRAM_OFFSET_LIMITS.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

@@ -29,7 +29,7 @@
  * Creates a mipmapped 64x32 2D texture and draws a series of squares whose
  * color contains a texel fetched from each quadrant of the rgbw texture.
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 90, piglit_height = 150;
 int piglit_window_mode = GLUT_RGBA | GLUT_DOUBLE;

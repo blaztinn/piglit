@@ -29,7 +29,7 @@
  */
 
 #include <stdio.h>
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "../../fbo/fbo-formats.h"
 
 int piglit_width = 10;

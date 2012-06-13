@@ -30,7 +30,7 @@
  * 2D textures, which caused incorrect sampling of border colors.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "piglit-framework.h"
 
 int piglit_width = 256, piglit_height = 128;

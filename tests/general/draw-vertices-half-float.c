@@ -29,7 +29,7 @@
  * This one is for half float vertices.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 320, piglit_height = 60;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

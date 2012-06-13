@@ -29,7 +29,7 @@
  * https://bugs.freedesktop.org/show_bug.cgi?id=40308
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 32;
 int piglit_height = 32;

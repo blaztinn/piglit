@@ -26,7 +26,7 @@
  * Tests that the getters for the new binding points in GL_ARB_copy_buffer work.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100, piglit_height = 100;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

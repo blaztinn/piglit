@@ -39,7 +39,7 @@
  *   existing texture.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 512, piglit_height = 512;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

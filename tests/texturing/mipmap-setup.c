@@ -31,7 +31,7 @@
  */
 
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "piglit-framework.h"
 
 int piglit_window_mode = GLUT_DOUBLE | GLUT_RGB;

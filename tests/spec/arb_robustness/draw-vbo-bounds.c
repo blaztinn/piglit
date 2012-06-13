@@ -45,7 +45,7 @@
  * - provide a command line option to actually enable ARB_robustness
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 320, piglit_height = 320;
 int piglit_window_mode = GLUT_RGB;

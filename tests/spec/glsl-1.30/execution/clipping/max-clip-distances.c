@@ -57,7 +57,7 @@
  * defined in the vertex and fragment shaders, and that this value is
  * at least 8.
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100, piglit_height = 100;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

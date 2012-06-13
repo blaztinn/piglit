@@ -32,7 +32,7 @@
  * with emphasis on linking vertex and fragment shaders
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 260, piglit_height = 365;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

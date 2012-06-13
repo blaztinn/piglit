@@ -27,7 +27,7 @@
  *
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "fbo-formats.h"
 
 int piglit_width = 128;

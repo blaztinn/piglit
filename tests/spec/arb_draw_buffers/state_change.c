@@ -29,7 +29,7 @@
  * It would then fail to enable the second buffer again because it was already
  * pointing to the new buffer. */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

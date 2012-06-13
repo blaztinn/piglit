@@ -39,7 +39,7 @@
  * This bug in Mesa impacted Trine.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

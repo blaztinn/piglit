@@ -41,7 +41,7 @@
  * primitives)
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 32;
 int piglit_height = 32;

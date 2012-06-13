@@ -35,7 +35,7 @@
  * so just have the initial test validate that
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "piglit-framework.h"
 
 int piglit_width = 100;

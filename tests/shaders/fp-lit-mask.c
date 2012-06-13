@@ -25,7 +25,7 @@
  * Test whether LIT honours the output mask.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 200, piglit_height = 200;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE | GLUT_DEPTH;

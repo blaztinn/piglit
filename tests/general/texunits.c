@@ -28,7 +28,7 @@
  * texture coord units, image units, combined units, etc.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 128, piglit_height = 128;

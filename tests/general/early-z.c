@@ -27,7 +27,7 @@
  * Test for bugs with early depth testing and early depth update.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 128;

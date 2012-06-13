@@ -28,7 +28,7 @@
  * INCOMPLETE_READ_BUFFER with ARB_ES2_compatibility.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

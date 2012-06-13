@@ -32,7 +32,7 @@
  * \author Ian Romanick <idr@us.ibm.com>
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 400;
 int piglit_height = 200;

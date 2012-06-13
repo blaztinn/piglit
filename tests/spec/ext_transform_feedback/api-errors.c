@@ -48,7 +48,7 @@
  * implementation is not overly aggressive in flagging errors.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 16;
 int piglit_height = 16;

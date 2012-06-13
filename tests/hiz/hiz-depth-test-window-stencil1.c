@@ -32,7 +32,7 @@
  * framebuffer with a stencilbuffer.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "hiz/hiz-util.h"
 
 int piglit_width = 400;

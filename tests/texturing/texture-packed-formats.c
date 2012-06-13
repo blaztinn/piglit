@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 700;
 int piglit_height = 620;

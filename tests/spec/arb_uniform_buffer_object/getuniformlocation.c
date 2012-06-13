@@ -37,7 +37,7 @@
  *      <name> is associated with a named uniform block..."
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100;
 int piglit_height = 100;

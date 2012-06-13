@@ -27,7 +27,7 @@
  * Tests GL_ARB_draw_instanced and GL_ARB_instanced_arrays
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 500, piglit_height = 500;

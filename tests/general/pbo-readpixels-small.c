@@ -36,7 +36,7 @@
  * https://bugs.freedesktop.org/show_bug.cgi?id=25921
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 2, piglit_height = 2;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

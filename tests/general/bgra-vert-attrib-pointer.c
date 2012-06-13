@@ -29,7 +29,7 @@
  * two quads are drawn without blending and two are drawn with alpha blending.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 400, piglit_height = 300;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

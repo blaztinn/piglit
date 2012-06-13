@@ -29,7 +29,7 @@
  * Oct 2011
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 150, piglit_height = 50;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

@@ -28,7 +28,7 @@
  * and GL_RG and tests for the correct color output.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "piglit-framework.h"
 
 int piglit_width = 40, piglit_height = 30;

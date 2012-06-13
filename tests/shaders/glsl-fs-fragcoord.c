@@ -30,7 +30,7 @@
  * Tests that gl_FragCoord produces the expected output in a fragment shader.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 256, piglit_height = 256;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

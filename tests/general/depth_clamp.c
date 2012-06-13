@@ -34,7 +34,7 @@
  * the same operations against the far plane.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100, piglit_height = 150;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH;

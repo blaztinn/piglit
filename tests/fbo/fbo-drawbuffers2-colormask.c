@@ -31,7 +31,7 @@
  * EXT_draw_buffers2 works.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

@@ -31,7 +31,7 @@
  * May 25, 2011
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 50, piglit_height = 50;

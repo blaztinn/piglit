@@ -33,7 +33,7 @@
  * per draw call.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 50, piglit_height = 50;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE | GLUT_ALPHA;

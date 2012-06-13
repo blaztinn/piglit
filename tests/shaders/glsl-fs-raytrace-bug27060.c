@@ -22,7 +22,7 @@
 */
 
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "glsl-fs-raytrace-bug27060.h"
 
 int piglit_width = 256, piglit_height = 256;

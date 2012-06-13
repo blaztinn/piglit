@@ -32,7 +32,7 @@
  * ONE_MINUS_SRC1_ALPHA), and a framebuffer is bound that has more than
  * the value of MAX_DUAL_SOURCE_DRAW_BUFFERS-1 active color attachements."
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;
 int piglit_width = 100, piglit_height = 100;

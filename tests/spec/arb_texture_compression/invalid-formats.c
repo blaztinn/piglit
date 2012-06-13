@@ -37,7 +37,7 @@
  * All texture compression extensions have taken this to mean only linear RGB
  * and linear RGBA formats should be exposed.
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 10, piglit_height = 10;
 int piglit_window_mode = GLUT_RGB;

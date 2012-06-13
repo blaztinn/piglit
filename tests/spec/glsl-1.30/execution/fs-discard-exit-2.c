@@ -42,7 +42,7 @@
  * 2x2 subspan aligned).
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 64, piglit_height = 64;
 int piglit_window_mode = GLUT_RGB | GLUT_ALPHA | GLUT_DOUBLE;

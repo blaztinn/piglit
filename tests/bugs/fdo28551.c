@@ -24,7 +24,7 @@
  *    Kristian Høgsberg <krh@bitplanet.net>
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 
 int piglit_width = 100;

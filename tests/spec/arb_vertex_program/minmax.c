@@ -25,7 +25,7 @@
  * Test for the minimum maximum values in GL_ARB_vertex_program.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 32;
 int piglit_height = 32;

@@ -26,7 +26,7 @@
  * of the GL 2.1 spec.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 #include "minmax-test.h"
 
 int piglit_width = 32;

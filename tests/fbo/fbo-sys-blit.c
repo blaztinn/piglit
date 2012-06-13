@@ -27,7 +27,7 @@
  * Test FBO blits involving the window-system-provided framebuffer.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 128;
 int piglit_height = 128;

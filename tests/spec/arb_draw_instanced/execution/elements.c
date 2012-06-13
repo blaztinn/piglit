@@ -31,7 +31,7 @@
  * glDrawArraysInstancedARB().
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 70, piglit_height = 30;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

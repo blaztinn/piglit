@@ -29,7 +29,7 @@
  * the same texture coordinate), but it reproduces a bug in the Mesa i915
  * driver.  See Meego bug #13005 (https://bugs.meego.com/show_bug.cgi?id=13005).
  */
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 100, piglit_height = 100;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE;

@@ -27,7 +27,7 @@
  * glDepthRange) and that it works.  Based on general/depth-clamp-range.c.
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 150, piglit_height = 150;
 int piglit_window_mode = GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH;

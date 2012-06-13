@@ -36,7 +36,7 @@
  * See also fbo-blit.c
  */
 
-#include "piglit-util.h"
+#include "piglit-util-gl-common.h"
 
 int piglit_width = 150;
 int piglit_height = 150;
