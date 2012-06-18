@@ -7,5 +7,5 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 CMakeCache.txt
-target_api
+target_api/*
 tests/glslparsertest/glslcompiler
