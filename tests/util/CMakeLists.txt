@@ -1,5 +1,7 @@
 add_definitions(-DSOURCE_DIR="${piglit_SOURCE_DIR}/")
 
+set(UTIL_LIBRARY piglitutil)
+
 set(UTIL_INCLUDES
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
@@ -25,7 +27,7 @@ set(UTIL_GL_SOURCES
 	)
 
 set(UTIL_GL_LIBS
-	piglitutil
+	${UTIL_LIBRARY}
 	)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")

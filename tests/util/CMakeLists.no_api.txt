@@ -2,12 +2,12 @@ include_directories(
 	${UTIL_INCLUDES}
 )
 
-piglit_add_library (piglitutil
+piglit_add_library (${UTIL_LIBRARY}
 	${UTIL_SOURCES}
 )
 
 if(UNIX)
-	target_link_libraries(piglitutil m)
+	target_link_libraries(${UTIL_LIBRARY} m)
 endif(UNIX)
 
 # vim: ft=cmake:
