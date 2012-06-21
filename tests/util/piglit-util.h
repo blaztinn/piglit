@@ -124,6 +124,8 @@ char *strchrnul(const char *s, int c);
 
 extern void piglit_set_rlimit(unsigned long lim);
 
+char *piglit_load_text_file(const char *file_name, unsigned *size);
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif
