@@ -11,6 +11,7 @@ link_libraries(
 piglit_add_library (piglitutil_${piglit_target_api}
 	piglit-util-cl.c
 	piglit-util-cl-enum.c
+	piglit-framework-cl.c
 )
 
 # vim: ft=cmake:
