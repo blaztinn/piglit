@@ -75,6 +75,7 @@ int piglit_cl_get_platform_version(cl_platform_id platform)
 
 	/* Interpret version number */
 	scanf_count = sscanf(version_number_string, "%i.%i", &major, &minor);
+	free(version_string);
 	if (scanf_count != 2) {
 		printf("Unable to interpret CL_PLATFORM_VERSION string: %s\n",
 		       version_string);
