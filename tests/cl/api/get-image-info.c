@@ -69,15 +69,8 @@ piglit_cl_test(const int argc,
 	int num_image_infos = PIGLIT_CL_ENUM_NUM(cl_image_info, env->version);
 	const cl_image_info* image_infos = PIGLIT_CL_ENUM_ARRAY(cl_image_info);
 	
-	if(env->version <= 11) {
-		image = clCreateImage2D(env->context.cl_ctx,
-		                        CL_MEM_READ_WRITE,
-		                        &image_format,
-		                        128, 128, 0,
-		                        NULL,
-		                        &errNo);
-	} else {
 #if defined CL_VERSION_1_2
+	if(env->version >= 12) {
 		cl_image_desc image_desc = {
 			.image_type = CL_MEM_OBJECT_IMAGE2D,
 			.image_width = 128,
@@ -95,11 +88,23 @@ piglit_cl_test(const int argc,
 		                      &image_desc,
 		                      NULL,
 		                      &errNo);
-#else //CL_VERSION_1_2
-		printf("This should not happen.\n");
-		return PIGLIT_FAIL;
-#endif //CL_VERSION_1_2
+	} else {
+		fprintf(stderr, "Could not create image. Piglit was compiled against OpenCL version >= 1.2 and cannot run this test for versions < 1.2 because clCreateImage function is not present.\n");
+		return PIGLIT_WARN;
 	}
+#else //CL_VERSION_1_2
+	if(env->version <= 11) {
+		image = clCreateImage2D(env->context.cl_ctx,
+		                        CL_MEM_READ_WRITE,
+		                        &image_format,
+		                        128, 128, 0,
+		                        NULL,
+		                        &errNo);
+	} else {
+		fprintf(stderr, "Could not create image. Piglit was compiled against OpenCL version < 1.2 and cannot run this test for versions >= 1.2 because clCreateImage2D function was deprecated.\n");
+		return PIGLIT_WARN;
+	}
+#endif //CL_VERSION_1_2
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
 		fprintf(stderr,
 		        "Failed (error code: %s): Create an image.\n",

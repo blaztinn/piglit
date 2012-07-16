@@ -250,7 +250,7 @@ piglit_cl_test(const int argc,
 
 #if defined(CL_VERSION_1_2)
 					if(!(   mixed_mem_flags & CL_MEM_HOST_READ_ONLY
-					     || mixed_mem_flags & CL_MEM_HOST_NO_ACCES))
+					     || mixed_mem_flags & CL_MEM_HOST_NO_ACCESS))
 #endif //CL_VERSION_1_2
 					if(!test_write(env->context.command_queues[i],
 					               mem,
@@ -274,7 +274,7 @@ piglit_cl_test(const int argc,
 
 #if defined(CL_VERSION_1_2)
 					if(!(   mixed_mem_flags & CL_MEM_HOST_WRITE_ONLY
-					     || mixed_mem_flags & CL_MEM_HOST_NO_ACCES))
+					     || mixed_mem_flags & CL_MEM_HOST_NO_ACCESS))
 #endif //CL_VERSION_1_2
 					if(!test_read(env->context.command_queues[i],
 					              mem,
@@ -300,7 +300,7 @@ piglit_cl_test(const int argc,
 					/* skip if we didn't write and read */
 					if(   mixed_mem_flags & CL_MEM_HOST_WRITE_ONLY
 					   || mixed_mem_flags & CL_MEM_HOST_READ_ONLY
-					   || mixed_mem_flags & CL_MEM_HOST_NO_ACCES)
+					   || mixed_mem_flags & CL_MEM_HOST_NO_ACCESS)
 						continue;
 #endif //CL_VERSION_1_2
 
