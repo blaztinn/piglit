@@ -52,6 +52,7 @@ piglit_cl_test(const int argc,
 {
 	int ref_count = 0;
 	const int max_ref_count = 10;
+	cl_int errNo;
 	cl_uint* ref_count_ptr;
 	cl_mem memobj;
 	cl_event event;
@@ -63,46 +64,82 @@ piglit_cl_test(const int argc,
 	                        CL_MEM_READ_WRITE,
 	                        512,
 	                        NULL,
-	                        NULL);
+	                        &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create buffer.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
-	if(clEnqueueReadBuffer(env->context.command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event) != CL_SUCCESS) {
-		printf("Could not create event by enqueueing buffer read.\n");
+	errNo = clEnqueueReadBuffer(env->context.command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create event by enqueueing buffer read.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
 	ref_count_ptr = piglit_cl_get_event_info(event, CL_EVENT_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_EVENT_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_EVENT_REFERENCE_COUNT should be 1 after creating event.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 
 	/* increase by two and decrease by one on each iteration */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainEvent(event), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseEvent(event), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainEvent(event), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainEvent(event);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainEvent: Failed (error code: %s): Retain event.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseEvent(event);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseEvent: Failed (error code: %s): Release event.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainEvent(event);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainEvent: Failed (error code: %s): Retain event.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_event_info(event, CL_EVENT_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_EVENT_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_EVENT_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseEvent(event), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseEvent(event);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseEvent: Failed (error code: %s): Release event.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_event_info(event, CL_EVENT_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_EVENT_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_EVENT_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -114,8 +151,20 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_EVENT if event is not a valid event object.
 	 */
-	if(!piglit_cl_check_error(clReleaseEvent(event), CL_INVALID_EVENT)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseEvent(NULL), CL_INVALID_EVENT)) return PIGLIT_FAIL;
+	errNo = clReleaseEvent(event);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_EVENT)) {
+			fprintf(stderr,
+			        "clReleaseEvent: Failed (error code: %s): Trigger CL_INVALID_EVENT if event is not a valid event object (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseEvent(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_EVENT)) {
+			fprintf(stderr,
+			        "clReleaseEvent: Failed (error code: %s): Trigger CL_INVALID_EVENT if event is not a valid event object (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	clReleaseMemObject(memobj);
 

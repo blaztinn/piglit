@@ -58,6 +58,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 
 	size_t param_value_size;
 	void* param_value;
@@ -69,24 +70,32 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_program_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(program_infos[i]));
 
-		if(!piglit_cl_check_error(clGetProgramInfo(env->program,
-		                                           program_infos[i],
-		                                           0,
-		                                           NULL,
-		                                           &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetProgramInfo(env->program,
+		                         program_infos[i],
+		                         0,
+		                         NULL,
+		                         &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(program_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
 		if(program_infos[i] != CL_PROGRAM_BINARIES) {
-			if(!piglit_cl_check_error(clGetProgramInfo(env->program,
-			                                           program_infos[i],
-			                                           param_value_size,
-			                                           param_value,
-			                                           NULL),
-			                          CL_SUCCESS)) {
+			errNo = clGetProgramInfo(env->program,
+			                         program_infos[i],
+			                         param_value_size,
+			                         param_value,
+			                         NULL);
+			if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+				fprintf(stderr,
+				        "Failed (error code: %s): Get value of %s.\n",
+				        piglit_cl_get_error_name(errNo),
+				        piglit_cl_get_enum_name(program_infos[i]));
 				piglit_merge_result(&result, PIGLIT_FAIL);
 			}
 		} else {
@@ -95,30 +104,30 @@ piglit_cl_test(const int argc,
 			size_t binary_sizes_size;
 			size_t* binary_sizes;
 
-			if(piglit_cl_check_error(clGetProgramInfo(env->program,
-			                                          CL_PROGRAM_BINARY_SIZES,
-			                                          0,
-			                                          NULL,
-			                                          &binary_sizes_size),
-			                         CL_SUCCESS)) {
+			errNo = clGetProgramInfo(env->program,
+			                         CL_PROGRAM_BINARY_SIZES,
+			                         0,
+			                         NULL,
+			                         &binary_sizes_size);
+			if(piglit_cl_check_error(errNo, CL_SUCCESS)) {
 				binary_sizes = malloc(binary_sizes_size);
 
-				if(piglit_cl_check_error(clGetProgramInfo(env->program,
-				                                          CL_PROGRAM_BINARY_SIZES,
-				                                          binary_sizes_size,
-				                                          binary_sizes,
-				                                          NULL),
-				                         CL_SUCCESS)) {
+				errNo = clGetProgramInfo(env->program,
+				                         CL_PROGRAM_BINARY_SIZES,
+				                         binary_sizes_size,
+				                         binary_sizes,
+				                         NULL);
+				if(piglit_cl_check_error(errNo, CL_SUCCESS)) {
 					for(j = 0; j < binary_sizes_size/sizeof(size_t); j++) {
 						((unsigned char**)param_value)[j] = malloc(binary_sizes[j]);
 					}
 
-					if(piglit_cl_check_error(clGetProgramInfo(env->program,
-					                                          program_infos[i],
-					                                          param_value_size,
-					                                          param_value,
-					                                          NULL),
-					                         CL_SUCCESS)) {
+					errNo = clGetProgramInfo(env->program,
+					                         program_infos[i],
+					                         param_value_size,
+					                         param_value,
+					                         NULL);
+					if(piglit_cl_check_error(errNo, CL_SUCCESS)) {
 						success = true;
 					}
 					
@@ -131,6 +140,10 @@ piglit_cl_test(const int argc,
 			}
 
 			if(!success) {
+				fprintf(stderr,
+				        "Failed (error code: %s): Get value of %s.\n",
+				        piglit_cl_get_error_name(errNo),
+				        piglit_cl_get_enum_name(program_infos[i]));
 				piglit_merge_result(&result, PIGLIT_FAIL);
 			}
 		}
@@ -148,33 +161,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetProgramInfo(env->program,
-	                                           CL_DEVICE_NAME,
-	                                           0,
-	                                           NULL,
-	                                           &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetProgramInfo(env->program,
+	                         CL_DEVICE_NAME,
+	                         0,
+	                         NULL,
+	                         &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetProgramInfo(env->program,
-	                                           CL_PROGRAM_REFERENCE_COUNT,
-	                                           1,
-	                                           param_value,
-	                                           NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetProgramInfo(env->program,
+	                         CL_PROGRAM_REFERENCE_COUNT,
+	                         1,
+	                         param_value,
+	                         NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_PROGRAM if program is not a valid program object.
 	 */
-	if(!piglit_cl_check_error(clGetProgramInfo(NULL,
-	                                           CL_PROGRAM_REFERENCE_COUNT,
-	                                           0,
-	                                           NULL,
-	                                           &param_value_size),
-	                          CL_INVALID_PROGRAM)) {
+	errNo = clGetProgramInfo(NULL,
+	                         CL_PROGRAM_REFERENCE_COUNT,
+	                         0,
+	                         NULL,
+	                         &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PROGRAM)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_PROGRAM if program is not a valid program object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	

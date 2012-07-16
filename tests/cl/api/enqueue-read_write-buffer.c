@@ -73,7 +73,8 @@ test_read(cl_command_queue command_queue,
           const cl_event *event_wait_list,
           cl_event *event,
           cl_int expected_error,
-          enum piglit_result* result) {
+          enum piglit_result* result,
+          const char* test_str) {
 	cl_int errNo;
 
 	errNo = clEnqueueReadBuffer(command_queue,
@@ -87,6 +88,7 @@ test_read(cl_command_queue command_queue,
 	                            event);
 
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "clEnqueueReadBuffer: Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return false;
 	}
@@ -105,7 +107,8 @@ test_write(cl_command_queue command_queue,
            const cl_event *event_wait_list,
            cl_event *event,
            cl_int expected_error,
-           enum piglit_result* result) {
+           enum piglit_result* result,
+           const char* test_str) {
 	cl_int errNo;
 
 	errNo = clEnqueueWriteBuffer(command_queue,
@@ -119,6 +122,7 @@ test_write(cl_command_queue command_queue,
 	                             event);
 
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "clEnqueueWriteBuffer: Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return false;
 	}
@@ -170,6 +174,8 @@ piglit_cl_test(const int argc,
                const struct piglit_cl_api_test_env* env)
 {
 	enum piglit_result result = PIGLIT_PASS;
+	char test_str_read[1024];
+	char test_str_write[1024];
 
 	int i;
 	int mask;
@@ -204,6 +210,13 @@ piglit_cl_test(const int argc,
 		if(!mem_flags_valid(mixed_mem_flags, num_mutexes, mutexes)) {
 			continue;
 		}
+		
+		sprintf(test_str_read,
+		        "Read from buffer using 0x%X as memory flags",
+		        (unsigned int)mixed_mem_flags);
+		sprintf(test_str_write,
+		        "Write to buffer using 0x%X as memory flags",
+		        (unsigned int)mixed_mem_flags);
 
 		if(   (mixed_mem_flags & CL_MEM_USE_HOST_PTR)
 		   || (mixed_mem_flags & CL_MEM_COPY_HOST_PTR)) {
@@ -248,8 +261,7 @@ piglit_cl_test(const int argc,
 					               0,
 					               NULL,
 					               NULL,
-					               CL_SUCCESS,
-					               &result)) {
+					               CL_SUCCESS, &result, test_str_write)) {
 						printf("  Device: %s\n    mem_flags: 0x%x, offset: %d, bytes: %d \n",
 						       device_name,
 						       (unsigned int)mixed_mem_flags,
@@ -273,8 +285,7 @@ piglit_cl_test(const int argc,
 					              0,
 					              NULL,
 					              NULL,
-					              CL_SUCCESS,
-					              &result)) {
+					              CL_SUCCESS, &result, test_str_read)) {
 						printf("  Device: %s\n    mem_flags: 0x%x, offset: %d, bytes: %d \n",
 						       device_name,
 						       (unsigned int)mixed_mem_flags,
@@ -296,6 +307,11 @@ piglit_cl_test(const int argc,
 					for(j = offset; j < cb; j++) {
 						if(host_buffer_read[j] != host_buffer_write[j]) {
 							int k;
+
+							sprintf(test_str_read,
+							        "Data read from buffer is not the same as data written to buffer using 0x%X as memory flags",
+							        (unsigned int)mixed_mem_flags);
+							fprintf(stderr, test_str_read);
 
 							printf("  Device: %s\n    mem_flags: 0x%x, offset: %d, bytes: %d \n",
 							       device_name,
@@ -345,11 +361,11 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command-queue.
 	 */
 	test_write(NULL, mem, true, 0, BUFFER_SIZE, host_buffer_write, 0, NULL, NULL,
-	           CL_INVALID_COMMAND_QUEUE,
-	           &result);
+	           CL_INVALID_COMMAND_QUEUE, &result,
+	           "Trigger CL_INVALID_COMMAND_QUEUE when command_queue is not a valid command-queue");
 	test_read(NULL, mem, true, 0, BUFFER_SIZE, host_buffer_read, 0, NULL, NULL,
-	          CL_INVALID_COMMAND_QUEUE,
-	          &result);
+	          CL_INVALID_COMMAND_QUEUE, &result,
+	          "Trigger CL_INVALID_COMMAND_QUEUE when command_queue is not a valid command-queue");
 	
 	/*
 	 * CL_INVALID_CONTEXT if the context associated with command_queue and
@@ -364,12 +380,12 @@ piglit_cl_test(const int argc,
 	
 	test_write(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
 	           0, NULL, NULL,
-	           CL_INVALID_CONTEXT,
-	           &result);
+	           CL_INVALID_CONTEXT, &result,
+	           "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
 	test_read(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
 	          0, NULL, NULL,
-	          CL_INVALID_CONTEXT,
-	          &result);
+	          CL_INVALID_CONTEXT, &result,
+	          "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
 
 	piglit_cl_release_context(context);
 
@@ -378,12 +394,12 @@ piglit_cl_test(const int argc,
 	 */
 	test_write(env->context.command_queues[0], NULL, true, 0, BUFFER_SIZE, host_buffer_write,
 	           0, NULL, NULL,
-	           CL_INVALID_MEM_OBJECT,
-	           &result);
+	           CL_INVALID_MEM_OBJECT, &result,
+	           "Trigger CL_INVALID_MEM_OBJECT when buffer is not a valid buffer object");
 	test_read(env->context.command_queues[0], NULL, true, 0, BUFFER_SIZE, host_buffer_read,
 	          0, NULL, NULL,
-	          CL_INVALID_MEM_OBJECT,
-	          &result);
+	          CL_INVALID_MEM_OBJECT, &result,
+	          "Trigger CL_INVALID_MEM_OBJECT when buffer is not a valid buffer object");
 
 	/*
 	 * CL_INVALID_VALUE if the region being read specified by (offset, cb)
@@ -391,28 +407,28 @@ piglit_cl_test(const int argc,
 	 */
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE+1, host_buffer_write,
 	           0, NULL, NULL,
-	           CL_INVALID_VALUE,
-	           &result);
+	           CL_INVALID_VALUE, &result,
+	           "Trigger CL_INVALID_VALUE when the region being read spcified by (offset, cb) is out of bounds");
 	test_read(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE+1, host_buffer_read,
 	          0, NULL, NULL,
-	          CL_INVALID_VALUE,
-	          &result);
+	          CL_INVALID_VALUE, &result,
+	          "Trigger CL_INVALID_VALUE when the region being read spcified by (offset, cb) is out of bounds");
 	test_write(env->context.command_queues[0], mem, true, 1, BUFFER_SIZE, host_buffer_write,
 	           0, NULL, NULL,
-	           CL_INVALID_VALUE,
-	           &result);
+	           CL_INVALID_VALUE, &result,
+	           "Trigger CL_INVALID_VALUE when the region being read spcified by (offset, cb) is out of bounds");
 	test_read(env->context.command_queues[0], mem, true, 1, BUFFER_SIZE, host_buffer_read,
 	          0, NULL, NULL,
-	          CL_INVALID_VALUE,
-	          &result);
+	          CL_INVALID_VALUE, &result,
+	          "Trigger CL_INVALID_VALUE when the region being read spcified by (offset, cb) is out of bounds");
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, NULL,
 	           0, NULL, NULL,
-	           CL_INVALID_VALUE,
-	           &result);
+	           CL_INVALID_VALUE, &result,
+	           "Trigger CL_INVALID_VALUE when ptr is NULL value");
 	test_read(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, NULL,
 	          0, NULL, NULL,
-	          CL_INVALID_VALUE,
-	          &result);
+	          CL_INVALID_VALUE, &result,
+	          "Trigger CL_INVALID_VALUE when ptr is NULL value");
 	
 	/*
 	 * CL_INVALID_EVENT_WAIT_LIST if event_wait_list is NULL and
@@ -424,33 +440,33 @@ piglit_cl_test(const int argc,
 	/* create a valid event */
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
 	           0, NULL, &valid_event,
-	           CL_SUCCESS,
-	           &result);
+	           CL_SUCCESS, &result,
+	           "Create an event");
 	
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
 	           1, NULL, NULL,
-	           CL_INVALID_EVENT_WAIT_LIST,
-	           &result);
+	           CL_INVALID_EVENT_WAIT_LIST, &result,
+	           "Trigger CL_INVALID_EVENT_WAIT_LIST when event_wait_list is NULL and num_events_in_wait_list is greater than 0");
 	test_read(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
 	          1, NULL, NULL,
-	          CL_INVALID_EVENT_WAIT_LIST,
-	          &result);
+	          CL_INVALID_EVENT_WAIT_LIST, &result,
+	          "Trigger CL_INVALID_EVENT_WAIT_LIST when event_wait_list is NULL and num_events_in_wait_list is greater than 0");
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
 	           0, &valid_event, NULL,
-	           CL_INVALID_EVENT_WAIT_LIST,
-	           &result);
+	           CL_INVALID_EVENT_WAIT_LIST, &result,
+	           "Trigger CL_INVALID_EVENT_WAIT_LIST when event_wait_list is not NULL and num_events_in_wait_list is 0");
 	test_read(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
 	          0, &valid_event, NULL,
-	          CL_INVALID_EVENT_WAIT_LIST,
-	          &result);
+	          CL_INVALID_EVENT_WAIT_LIST, &result,
+	          "Trigger CL_INVALID_EVENT_WAIT_LIST when event_wait_list is not NULL and num_events_in_wait_list is 0");
 	test_write(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
 	           1, &invalid_event, NULL,
-	           CL_INVALID_EVENT_WAIT_LIST,
-	           &result);
+	           CL_INVALID_EVENT_WAIT_LIST, &result,
+	           "Trigger CL_INVALID_EVENT_WAIT_LIST when event objects in event_wait_list are not valid events");
 	test_read(env->context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
 	          1, &invalid_event, NULL,
-	          CL_INVALID_EVENT_WAIT_LIST,
-	          &result);
+	          CL_INVALID_EVENT_WAIT_LIST, &result,
+	          "Trigger CL_INVALID_EVENT_WAIT_LIST when event objects in event_wait_list are not valid events");
 
 	clReleaseEvent(valid_event);
 

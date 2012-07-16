@@ -106,12 +106,15 @@ piglit_cl_test(const int argc,
 		if(errNo == CL_SUCCESS) {
 			for(i = 1; i <= num_devices; i++) {
 				devices = malloc(i * sizeof(cl_device_id));
-				if(!piglit_cl_check_error(clGetDeviceIDs(env->platform_id,
-				                                         mixed_device_types,
-				                                         num_devices,
-				                                         devices,
-				                                         NULL),
-				                          CL_SUCCESS)) {
+				errNo = clGetDeviceIDs(env->platform_id,
+				                       mixed_device_types,
+				                       num_devices,
+				                       devices,
+				                       NULL);
+				if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+						fprintf(stderr,
+						        "Failed (error code: %s): Get devices list.\n",
+						        piglit_cl_get_error_name(errNo));
 					piglit_merge_result(&result, PIGLIT_FAIL);
 				}
 				free(devices);
@@ -120,6 +123,9 @@ piglit_cl_test(const int argc,
 			/* skip retrieving devices */
 		} else {
 			piglit_cl_check_error(errNo, CL_SUCCESS);
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of devices list.\n",
+			        piglit_cl_get_error_name(errNo));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 	}
@@ -130,26 +136,33 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_VALUE if num_entries is equal to zero and devices
 	 * is not NULL or if both num_devices and devices are NULL.
 	 */
-	if(!piglit_cl_check_error(clGetDeviceIDs(env->platform_id,
-	                                         CL_DEVICE_TYPE_ALL,
-	                                         0,
-	                                         &device_random,
-	                                         NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetDeviceIDs(env->platform_id,
+	                       CL_DEVICE_TYPE_ALL,
+	                       0,
+	                       &device_random,
+	                       NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if num_entries is equeal to zero and devices is not NULL.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
-	if(!piglit_cl_check_error(clGetDeviceIDs(env->platform_id,
-	                                         CL_DEVICE_TYPE_ALL,
-	                                         100,
-	                                         NULL,
-	                                         NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetDeviceIDs(env->platform_id,
+	                       CL_DEVICE_TYPE_ALL,
+	                       100,
+	                       NULL,
+	                       NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		piglit_merge_result(&result, PIGLIT_FAIL);
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if both num_devices and devices are NULL.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	/*
 	 * CL_INVALID_DEVICE_TYPE if device_type is not a valid value.
 	 *
-	 * Note: Cannot test, because there is no mutually exclusive flags.
+	 * Note: Cannot test, because there are no mutually exclusive flags.
 	 *
 	 * piglit_cl_expect_error(clGetDeviceIDs(env->platform_id,
 	 *                                       0,
@@ -163,12 +176,15 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_PLATFORM if platform is not a valid platform.
 	 */
-	if(!piglit_cl_check_error(clGetDeviceIDs(NULL,
-	                                         CL_DEVICE_TYPE_ALL,
-	                                         0,
-	                                         NULL,
-	                                         &num_devices),
-	                          CL_INVALID_PLATFORM)) {
+	errNo = clGetDeviceIDs(NULL,
+	                       CL_DEVICE_TYPE_ALL,
+	                       0,
+	                       NULL,
+	                       &num_devices);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PLATFORM)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_PLATFORM if platform is not a valid platform.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

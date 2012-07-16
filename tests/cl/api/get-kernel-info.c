@@ -71,7 +71,9 @@ piglit_cl_test(const int argc,
 	                        "dummy_kernel",
 	                        &errNo);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
-		printf("Can't create kernel.\n");
+		fprintf(stderr,
+		        "Failed (error code: %s): Create kernel.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
@@ -79,23 +81,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_kernel_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(kernel_infos[i]));
 
-		if(!piglit_cl_check_error(clGetKernelInfo(kernel,
-		                                          kernel_infos[i],
-		                                          0,
-		                                          NULL,
-		                                          &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetKernelInfo(kernel,
+		                        kernel_infos[i],
+		                        0,
+		                        NULL,
+		                        &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(kernel_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetKernelInfo(kernel,
-		                                          kernel_infos[i],
-		                                          param_value_size,
-		                                          param_value,
-		                                          NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetKernelInfo(kernel,
+		                        kernel_infos[i],
+		                        param_value_size,
+		                        param_value,
+		                        NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(kernel_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -112,33 +122,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetKernelInfo(kernel,
-	                                          CL_DEVICE_NAME,
-	                                          0,
-	                                          NULL,
-	                                          &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetKernelInfo(kernel,
+	                        CL_DEVICE_NAME,
+	                        0,
+	                        NULL,
+	                        &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetKernelInfo(kernel,
-	                                          CL_KERNEL_FUNCTION_NAME,
-	                                          1,
-	                                          param_value,
-	                                          NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetKernelInfo(kernel,
+	                        CL_KERNEL_FUNCTION_NAME,
+	                        1,
+	                        param_value,
+	                        NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_KERNEL if kernel is not a valid kernel object.
 	 */
-	if(!piglit_cl_check_error(clGetKernelInfo(NULL,
-	                                          CL_KERNEL_FUNCTION_NAME,
-	                                          0,
-	                                          NULL,
-	                                          &param_value_size),
-	                          CL_INVALID_KERNEL)) {
+	errNo = clGetKernelInfo(NULL,
+	                        CL_KERNEL_FUNCTION_NAME,
+	                        0,
+	                        NULL,
+	                        &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_KERNEL)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_KERNEL if kernel is not a valid kernel object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

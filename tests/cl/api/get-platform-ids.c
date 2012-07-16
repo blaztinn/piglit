@@ -51,44 +51,57 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 	cl_uint num_platforms;
 	cl_platform_id* platforms;
 
 	/*** Normal usage ***/
 
 	/* get number of platforms */
-	if(!piglit_cl_check_error(clGetPlatformIDs(0, NULL, &num_platforms),
-	                          CL_SUCCESS)) {
+	errNo = clGetPlatformIDs(0, NULL, &num_platforms);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		piglit_cl_check_error(errNo, CL_SUCCESS);
+		fprintf(stderr,
+		        "Failed (error code: %s): Get size of platform list.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
-	}
-
-	/*
-	 * Get platform list.
-	 * Try returning from 1 to num_platforms platforms.
-	 */
-	for(i = 1; i <= num_platforms; i++) {
-		platforms = malloc(i * sizeof(cl_platform_id));
-		if(!piglit_cl_check_error(clGetPlatformIDs(i, platforms, NULL),
-		                          CL_SUCCESS)) {
-			piglit_merge_result(&result, PIGLIT_FAIL);
+	} else {
+		/*
+		 * Get platform list.
+		 * Try returning from 1 to num_platforms platforms.
+		 */
+		for(i = 1; i <= num_platforms; i++) {
+			platforms = malloc(i * sizeof(cl_platform_id));
+			errNo = clGetPlatformIDs(i, platforms, NULL);
+			if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+				fprintf(stderr,
+				        "Failed (error code: %s): Get platform list.\n",
+				        piglit_cl_get_error_name(errNo));
+				piglit_merge_result(&result, PIGLIT_FAIL);
+			}
+			free(platforms);
 		}
-		free(platforms);
 	}
 	
 	/*** Errors ***/
 
 	/*
-	 * Returns CL_SUCCESS if the function is executed successfully.
-	 * Otherwise it returns CL_INVALID_VALUE if num_entries is equal
+	 * CL_INVALID_VALUE if num_entries is equal
 	 * to zero and platforms is not NULL, or if both num_platforms 
 	 * and platforms are NULL.
 	 */
-	if(!piglit_cl_check_error(clGetPlatformIDs(0, platforms, NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetPlatformIDs(0, platforms, NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if num_entries is equeal to zero and platforms is not NULL.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
-	if(!piglit_cl_check_error(clGetPlatformIDs(100, NULL, NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetPlatformIDs(100, NULL, NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if both num_platforms and platforms are NULL.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

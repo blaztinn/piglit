@@ -101,7 +101,9 @@ piglit_cl_test(const int argc,
 #endif //CL_VERSION_1_2
 	}
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
-		printf("Can't create image.\n");
+		fprintf(stderr,
+		        "Failed (error code: %s): Create an image.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
@@ -109,23 +111,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_image_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(image_infos[i]));
 
-		if(!piglit_cl_check_error(clGetImageInfo(image,
-		                                         image_infos[i],
-		                                         0,
-		                                         NULL,
-		                                         &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetImageInfo(image,
+		                       image_infos[i],
+		                       0,
+		                       NULL,
+		                       &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(image_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetImageInfo(image,
-		                                         image_infos[i],
-		                                         param_value_size,
-		                                         param_value,
-		                                         NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetImageInfo(image,
+		                       image_infos[i],
+		                       param_value_size,
+		                       param_value,
+		                       NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(image_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -142,33 +152,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetImageInfo(image,
-	                                         CL_DEVICE_NAME,
-	                                         0,
-	                                         NULL,
-	                                         &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetImageInfo(image,
+	                       CL_DEVICE_NAME,
+	                       0,
+	                       NULL,
+	                       &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetImageInfo(image,
-	                                         CL_IMAGE_FORMAT,
-	                                         1,
-	                                         param_value,
-	                                         NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetImageInfo(image,
+	                       CL_IMAGE_FORMAT,
+	                       1,
+	                       param_value,
+	                       NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_MEM_OBJECT if image is a not a valid image object.
 	 */
-	if(!piglit_cl_check_error(clGetImageInfo(NULL,
-	                                         CL_IMAGE_FORMAT,
-	                                         0,
-	                                         NULL,
-	                                         &param_value_size),
-	                          CL_INVALID_MEM_OBJECT)) {
+	errNo = clGetImageInfo(NULL,
+	                       CL_IMAGE_FORMAT,
+	                       0,
+	                       NULL,
+	                       &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_MEM_OBJECT)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_MEM_OBJECT if image is not a valid image object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

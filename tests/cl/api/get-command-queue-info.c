@@ -56,6 +56,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 	cl_command_queue command_queue = env->context.command_queues[0];
 
 	size_t param_value_size;
@@ -69,22 +70,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_command_queue_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(command_queue_infos[i]));
 
-		if(!piglit_cl_check_error(clGetCommandQueueInfo(command_queue,
-		                                                command_queue_infos[i],
-		                                                0,
-		                                                NULL,
-		                                                &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetCommandQueueInfo(command_queue,
+		                              command_queue_infos[i],
+		                              0,
+		                              NULL,
+		                              &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(command_queue_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
+			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetCommandQueueInfo(command_queue,
-		                                                command_queue_infos[i],
-		                                                param_value_size,
-		                                                param_value,
-		                                                NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetCommandQueueInfo(command_queue,
+		                              command_queue_infos[i],
+		                              param_value_size,
+		                              param_value,
+		                              NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(command_queue_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -101,33 +111,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetCommandQueueInfo(command_queue,
-	                                                CL_PLATFORM_NAME,
-	                                                0,
-	                                                NULL,
-	                                                &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetCommandQueueInfo(command_queue,
+	                              CL_PLATFORM_NAME,
+	                              0,
+	                              NULL,
+	                              &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetCommandQueueInfo(command_queue,
-	                                                CL_QUEUE_REFERENCE_COUNT,
-	                                                1,
-	                                                param_value,
-	                                                NULL),
-	                             CL_INVALID_VALUE)) {
+	errNo = clGetCommandQueueInfo(command_queue,
+	                              CL_QUEUE_REFERENCE_COUNT,
+	                              1,
+	                              param_value,
+	                              NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
-	 * CL_INVALID_COMMAND_QUEUE if device is not a valid device.
+	 * CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command queue.
 	 */
-	if(!piglit_cl_check_error(clGetCommandQueueInfo(NULL,
-	                                                CL_QUEUE_CONTEXT,
-	                                                0,
-	                                                NULL,
-	                                                &param_value_size),
-	                             CL_INVALID_COMMAND_QUEUE)) {
+	errNo = clGetCommandQueueInfo(NULL,
+	                              CL_QUEUE_CONTEXT,
+	                              0,
+	                              NULL,
+	                              &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_COMMAND_QUEUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command queue.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

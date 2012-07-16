@@ -54,50 +54,80 @@ piglit_cl_test(const int argc,
 {
 	int ref_count = 0;
 	const int max_ref_count = 10;
+	cl_int errNo;
 	cl_uint* ref_count_ptr;
 	cl_kernel kernel;
 
 	/*** Normal usage ***/
 
-	kernel = clCreateKernel(env->program, "dummy_kernel", NULL);
-	if(kernel == NULL) {
-		printf("Could not create kernel.\n");
+	kernel = clCreateKernel(env->program, "dummy_kernel", &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create kernel.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
 	ref_count_ptr = piglit_cl_get_kernel_info(kernel, CL_KERNEL_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_KERNEL_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_KERNEL_REFERENCE_COUNT should be 1 after creating kernel.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 
 	/* increase by two and decrease by one on each iteration */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainKernel(kernel), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseKernel(kernel), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainKernel(kernel), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainKernel(kernel);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainKernel: Failed (error code: %s): Retain kernel.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseKernel(kernel);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseKernel: Failed (error code: %s): Release kernel.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainKernel(kernel);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainKernel: Failed (error code: %s): Retain kernel.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_kernel_info(kernel, CL_KERNEL_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_KERNEL_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_KERNEL_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseKernel(kernel), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseKernel(kernel);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseKernel: Failed (error code: %s): Release kernel.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_kernel_info(kernel, CL_KERNEL_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_KERNEL_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_KERNEL_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -109,8 +139,20 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_KERNEL if kernel is not a valid kernel object.
 	 */
-	if(!piglit_cl_check_error(clReleaseKernel(kernel), CL_INVALID_KERNEL)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseKernel(NULL), CL_INVALID_KERNEL)) return PIGLIT_FAIL;
+	errNo = clReleaseKernel(kernel);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_KERNEL)) {
+			fprintf(stderr,
+			        "clReleaseKernel: Failed (error code: %s): Trigger CL_INVALID_KERNEL if kernel is not a valid kernel object (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseKernel(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_KERNEL)) {
+			fprintf(stderr,
+			        "clReleaseKernel: Failed (error code: %s): Trigger CL_INVALID_KERNEL if kernel is not a valid kernel object (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	return PIGLIT_PASS;
 }

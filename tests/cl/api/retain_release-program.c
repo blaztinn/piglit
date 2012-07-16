@@ -54,6 +54,7 @@ piglit_cl_test(const int argc,
 {
 	int ref_count = 0;
 	const int max_ref_count = 10;
+	cl_int errNo;
 	cl_uint* ref_count_ptr;
 
 	/*** Normal usage ***/
@@ -62,41 +63,74 @@ piglit_cl_test(const int argc,
 	                                               1,
 	                                               &dummy_kernel,
 	                                               NULL,
-	                                               NULL);
+	                                               &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create program.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	ref_count_ptr = piglit_cl_get_program_info(program, CL_PROGRAM_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_PROGRAM_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_PROGRAM_REFERENCE_COUNT should be 1 after creating program.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 
 	/* increase by two and decrease by one on each iteration */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainProgram(program), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseProgram(program), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainProgram(program), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainProgram(program);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainProgram: Failed (error code: %s): Retain program.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseProgram(program);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseProgram: Failed (error code: %s): Release program.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainProgram(program);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainProgram: Failed (error code: %s): Retain program.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_program_info(program, CL_PROGRAM_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_PROGRAM_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_PROGRAM_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseProgram(program), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseProgram(program);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseProgram: Failed (error code: %s): Release program.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_program_info(program, CL_PROGRAM_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_PROGRAM_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_PROGRAM_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -108,8 +142,20 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_PROGRAM if program is not a valid program object.
 	 */
-	if(!piglit_cl_check_error(clReleaseProgram(program), CL_INVALID_PROGRAM)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseProgram(NULL), CL_INVALID_PROGRAM)) return PIGLIT_FAIL;
+	errNo = clReleaseProgram(program);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PROGRAM)) {
+			fprintf(stderr,
+			        "clReleaseProgram: Failed (error code: %s): Trigger CL_INVALID_PROGRAM if program is not a valid program object (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseProgram(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PROGRAM)) {
+			fprintf(stderr,
+			        "clReleaseProgram: Failed (error code: %s): Trigger CL_INVALID_PROGRAM if program is not a valid program object (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	return PIGLIT_PASS;
 }

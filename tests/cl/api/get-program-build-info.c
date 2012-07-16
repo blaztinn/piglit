@@ -59,6 +59,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 
 	size_t param_value_size;
 	void* param_value;
@@ -70,25 +71,33 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_program_build_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(program_build_infos[i]));
 
-		if(!piglit_cl_check_error(clGetProgramBuildInfo(env->program,
-		                                                env->device_id,
-		                                                program_build_infos[i],
-		                                                0,
-		                                                NULL,
-		                                                &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetProgramBuildInfo(env->program,
+		                              env->device_id,
+		                              program_build_infos[i],
+		                              0,
+		                              NULL,
+		                              &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(program_build_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetProgramBuildInfo(env->program,
-		                                                env->device_id,
-		                                                program_build_infos[i],
-		                                                param_value_size,
-		                                                param_value,
-		                                                NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetProgramBuildInfo(env->program,
+		                              env->device_id,
+		                              program_build_infos[i],
+		                              param_value_size,
+		                              param_value,
+		                              NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(program_build_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -105,49 +114,61 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetProgramBuildInfo(env->program,
-	                                                env->device_id,
-	                                                CL_DEVICE_NAME,
-	                                                0,
-	                                                NULL,
-	                                                &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetProgramBuildInfo(env->program,
+	                              env->device_id,
+	                              CL_DEVICE_NAME,
+	                              0,
+	                              NULL,
+	                              &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetProgramBuildInfo(env->program,
-	                                                env->device_id,
-	                                                CL_PROGRAM_BUILD_STATUS,
-	                                                1,
-	                                                param_value,
-	                                                NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetProgramBuildInfo(env->program,
+	                              env->device_id,
+	                              CL_PROGRAM_BUILD_STATUS,
+	                              1,
+	                              param_value,
+	                              NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_PROGRAM if program is not a valid program object.
 	 */
-	if(!piglit_cl_check_error(clGetProgramBuildInfo(NULL,
-	                                                env->device_id,
-	                                                CL_PROGRAM_BUILD_STATUS,
-	                                                0,
-	                                                NULL,
-	                                                &param_value_size),
-	                          CL_INVALID_PROGRAM)) {
+	errNo = clGetProgramBuildInfo(NULL,
+	                              env->device_id,
+	                              CL_PROGRAM_BUILD_STATUS,
+	                              0,
+	                              NULL,
+	                              &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PROGRAM)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_PROGRAM if program is not a valid program object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * Returns CL_INVALID_DEVICE if device is not in the list of devices associated with program.
 	 */
-	if(!piglit_cl_check_error(clGetProgramBuildInfo(env->program,
-	                                                NULL,
-	                                                CL_PROGRAM_BUILD_STATUS,
-	                                                0,
-	                                                NULL,
-	                                                &param_value_size),
-	                          CL_INVALID_DEVICE)) {
+	errNo = clGetProgramBuildInfo(env->program,
+	                              NULL,
+	                              CL_PROGRAM_BUILD_STATUS,
+	                              0,
+	                              NULL,
+	                              &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_DEVICE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_DEVICE if device is not in the list of devices associated with program.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

@@ -56,6 +56,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 	cl_event event;
 	cl_mem memobj;
 	unsigned char buffer[1];
@@ -72,8 +73,11 @@ piglit_cl_test(const int argc,
 	                        NULL,
 	                        NULL);
 
-	if(clEnqueueReadBuffer(env->context.command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event) != CL_SUCCESS) {
-		printf("Could not create event by enqueueing buffer read.\n");
+	errNo = clEnqueueReadBuffer(env->context.command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+		fprintf(stderr,
+		        "Failed (error code: %s): Create an event by enqueueing a buffer read.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
@@ -81,23 +85,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_event_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(event_infos[i]));
 
-		if(!piglit_cl_check_error(clGetEventInfo(event,
-		                                         event_infos[i],
-		                                         0,
-		                                         NULL,
-		                                         &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetEventInfo(event,
+		                       event_infos[i],
+		                       0,
+		                       NULL,
+		                       &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(event_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetEventInfo(event,
-		                                         event_infos[i],
-		                                         param_value_size,
-		                                         param_value,
-		                                         NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetEventInfo(event,
+		                       event_infos[i],
+		                       param_value_size,
+		                       param_value,
+		                       NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(event_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -114,33 +126,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetEventInfo(event,
-	                                         CL_DEVICE_NAME,
-	                                         0,
-	                                         NULL,
-	                                         &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetEventInfo(event,
+	                       CL_DEVICE_NAME,
+	                       0,
+	                       NULL,
+	                       &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetEventInfo(event,
-	                                         CL_EVENT_COMMAND_QUEUE,
-	                                         1,
-	                                         param_value,
-	                                         NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetEventInfo(event,
+	                       CL_EVENT_COMMAND_QUEUE,
+	                       1,
+	                       param_value,
+	                       NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_EVENT if event is not a valid event object.
 	 */
-	if(!piglit_cl_check_error(clGetEventInfo(NULL,
-	                                         CL_EVENT_COMMAND_QUEUE,
-	                                         0,
-	                                         NULL,
-	                                         &param_value_size),
-	                          CL_INVALID_EVENT)) {
+	errNo = clGetEventInfo(NULL,
+	                       CL_EVENT_COMMAND_QUEUE,
+	                       0,
+	                       NULL,
+	                       &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_EVENT)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_EVENT if event is not a valid event object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

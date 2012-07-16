@@ -64,7 +64,8 @@ test(cl_context_properties *properties,
      ),
      void *user_data,
      cl_int expected_error,
-     enum piglit_result* result) {
+     enum piglit_result* result,
+     const char* test_str) {
 	cl_int errNo;
 	cl_context cl_ctx;
 
@@ -77,18 +78,21 @@ test(cl_context_properties *properties,
 	                         &errNo);
 	
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	};
 	if(expected_error == CL_SUCCESS) {
 		if(cl_ctx == NULL) {
 			printf("Expecting non-NULL cl_context\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseContext(cl_ctx);
 	} else if(cl_ctx != NULL) {
-		printf("Expecting non-NULL cl_context\n");
+		printf("Expecting NULL cl_context\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -104,12 +108,14 @@ test(cl_context_properties *properties,
 	if(expected_error == CL_SUCCESS) {
 		if(cl_ctx == NULL) {
 			printf("Expecting non-NULL cl_context\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseContext(cl_ctx);
 	} else if(cl_ctx != NULL) {
-		printf("Expecting non-NULL cl_context\n");
+		printf("Expecting NULL cl_context\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -124,8 +130,10 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 	cl_uint num_devices;
 	cl_device_id* devices;
+	cl_context cl_ctx;
 	
 	//TODO: test also CL_CONTEXT_INTEROP_USER_SYNC
 	cl_context_properties context_properties[] = {
@@ -157,7 +165,7 @@ piglit_cl_test(const int argc,
 	 */
 	for(i = 1; i <= num_devices; i++) {
 		test(context_properties, i, devices, NULL, NULL,
-		     CL_SUCCESS, &result);
+		     CL_SUCCESS, &result, "Create context");
 		//TODO: test callback functions
 	}
 	
@@ -171,8 +179,29 @@ piglit_cl_test(const int argc,
 	 * Note: Can not test implementation-defined behaviour on
 	 *       NULL context_properties.
 	 */
-	test(invalid_platform_context_properties, num_devices, devices, NULL, NULL,
-	     CL_INVALID_PLATFORM, &result);
+	cl_ctx = clCreateContext(invalid_platform_context_properties,
+	                         num_devices,
+	                         devices,
+	                         NULL,
+	                         NULL,
+	                         &errNo);
+	if(   errNo != CL_INVALID_PLATFORM
+#if defined(CL_VERSION_1_1)
+	   && errNo != CL_INVALID_PROPERTY
+#endif
+	   ) {
+		test(invalid_platform_context_properties, num_devices, devices, NULL, NULL,
+		     CL_INVALID_PLATFORM, &result,
+		     "Trigger CL_INVALID_PLATFORM if platform value specified in properties is not a valid platform");
+#if defined(CL_VERSION_1_1)
+		printf("Another valid expected CL error: %d\n", CL_INVALID_PROPERTY);
+#endif
+		piglit_merge_result(&result, PIGLIT_FAIL);
+	} else if (cl_ctx != NULL) {
+		test(invalid_platform_context_properties, num_devices, devices, NULL, NULL,
+		     CL_INVALID_PLATFORM, &result,
+		     "Trigger CL_INVALID_PLATFORM if platform value specified in properties is not a valid platform");
+	}
 
 	/*
 	 * CL_INVALID_VALUE if context property name in properties is
@@ -189,14 +218,18 @@ piglit_cl_test(const int argc,
 	 */
 	if(env->version <= 10) {
 		test(invalid_context_properties, num_devices, devices, NULL, NULL,
-		     CL_INVALID_VALUE, &result);
+		     CL_INVALID_VALUE, &result,
+		     "Trigger CL_INVALID_VALUE if context property name in properties is not a supported property name");
 	}
 	test(context_properties, num_devices, NULL, NULL, NULL,
-	     CL_INVALID_VALUE, &result);
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE if devices is NULL");
 	test(context_properties, num_devices, devices, NULL, &context_properties,
-	     CL_INVALID_VALUE, &result);
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE if num_devices is equal to zero");
 	test(context_properties, 0, devices, NULL, NULL,
-	     CL_INVALID_VALUE, &result);
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE if pfn_notify is NULL but user_data is not NULL");
 
 	/*
 	 * CL_INVALID_PROPERTY if context property name in properties
@@ -205,13 +238,18 @@ piglit_cl_test(const int argc,
 	 * property name is specified more than once.
 	 *
 	 * Version: 1.1
+	 *
+	 * Note: 'if the value specified for a supported property name is
+	 * not valid' was already tested
 	 */
 #if defined(CL_VERSION_1_1)
 	if(env->version >= 11) {
 		test(invalid_context_properties, num_devices, devices, NULL, NULL,
-		     CL_INVALID_PROPERTY, &result);
+		     CL_INVALID_PROPERTY, &result,
+		     "Trigger CL_INVALID_PROPERTY if context property name in poperties is not a supported property name");
 		test(multiple_platform_context_properties, num_devices, devices, NULL, NULL,
-		     CL_INVALID_PROPERTY, &result);
+		     CL_INVALID_PROPERTY, &result,
+		     "Trigger CL_INVALID_PROPERTY if the same property is specified more than once");
 	}
 #endif
 

@@ -56,7 +56,8 @@ test(cl_context cl_ctx,
      const char **strings,
      const size_t *lengths,
      cl_int expected_error,
-     enum piglit_result* result) {
+     enum piglit_result* result,
+     const char* test_str) {
 	cl_int errNo;
 	cl_program program;
 
@@ -68,18 +69,21 @@ test(cl_context cl_ctx,
 	                                    &errNo);
 	
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
 	if(expected_error == CL_SUCCESS) {
 		if(program == NULL) {
 			printf("Expecting non-NULL cl_program\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseProgram(program);
 	} else if (program != NULL) {
 		printf("Expecting NULL cl_program\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -94,12 +98,14 @@ test(cl_context cl_ctx,
 	if(expected_error == CL_SUCCESS) {
 		if(program == NULL) {
 			printf("Expecting non-NULL cl_program\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseProgram(program);
 	} else if (program != NULL) {
 		printf("Expecting NULL cl_program\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -130,46 +136,31 @@ piglit_cl_test(const int argc,
 		size_t* partial_lengths = malloc(2 * sizeof(size_t));
 
 		/* separate */
-		test(env->context.cl_ctx,
-		     1,
-		     &strings[i],
-		     &lengths[i],
-		     CL_SUCCESS,
-		     &result);
-		test(env->context.cl_ctx,
-		     1,
-		     &strings[i],
-		     NULL,
-		     CL_SUCCESS,
-		     &result);
+		test(env->context.cl_ctx, 1, &strings[i], &lengths[i],
+		     CL_SUCCESS, &result,
+		     "Create program with 1 source string and defined length");
+		test(env->context.cl_ctx, 1, &strings[i], NULL,
+		     CL_SUCCESS, &result,
+		     "Create program with 1 source string and lenghts == NULL");
 		
 		/* all, i-th length is 0 */
 		partial_lengths[i] = 0;
 		partial_lengths[(i+1)%2] = lengths[(i+1)%2];
 		
-		test(env->context.cl_ctx,
-		     2,
-		     strings,
-		     partial_lengths,
-		     CL_SUCCESS,
-		     &result);
+		test(env->context.cl_ctx, 2, strings, partial_lengths,
+		     CL_SUCCESS, &result,
+		     "Create program with multiple source strings and only some lenghts defined (others are NULL)");
 
 		free(partial_lengths);
 	}
 
 	/* all */
-	test(env->context.cl_ctx,
-	     2,
-	     strings,
-	     lengths,
-	     CL_SUCCESS,
-	     &result);
-	test(env->context.cl_ctx,
-	     2,
-	     strings,
-	     NULL,
-	     CL_SUCCESS,
-	     &result);
+	test(env->context.cl_ctx, 2, strings, lengths,
+	     CL_SUCCESS, &result,
+	     "Create program with multiple source strings and defined lengths");
+	test(env->context.cl_ctx, 2, strings, NULL,
+	     CL_SUCCESS, &result,
+	     "Create program with multiple source strings and lenghts == NULL");
 	
 	
 	/*** Errors ***/
@@ -177,35 +168,23 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_CONTEXT if context is not a valid context.
 	 */
-	test(NULL,
-	     2,
-	     strings,
-	     NULL,
-	     CL_INVALID_CONTEXT,
-	     &result);
+	test(NULL, 2, strings, NULL,
+	     CL_INVALID_CONTEXT, &result,
+	     "Trigger CL_INVALID_CONTEXT when context is not a valid context");
 
 	/*
 	 * CL_INVALID_VALUE if count is zero or if strings or
 	 * any entry in strings is NULL.
 	 */
-	test(env->context.cl_ctx,
-	     0,
-	     strings,
-	     NULL,
-	     CL_INVALID_VALUE,
-	     &result);
-	test(env->context.cl_ctx,
-	     0,
-	     NULL,
-	     NULL,
-	     CL_INVALID_VALUE,
-	     &result);
-	test(env->context.cl_ctx,
-	     1,
-	     &null,
-	     NULL,
-	     CL_INVALID_VALUE,
-	     &result);
+	test(env->context.cl_ctx, 0, strings, NULL,
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE when count is zero");
+	test(env->context.cl_ctx, 0, NULL, NULL,
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE when strings is NULL");
+	test(env->context.cl_ctx, 1, &null, NULL,
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE when any entry in strings is NULL");
 
 	free(strings);
 	free(lengths);

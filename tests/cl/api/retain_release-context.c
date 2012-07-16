@@ -68,44 +68,76 @@ piglit_cl_test(const int argc,
 	                                 NULL,
 	                                 &errNo);
 	if(errNo == CL_DEVICE_NOT_FOUND) {
-		printf("No available devices.\n");
+		fprintf(stderr, "No available devices.\n");
 		return PIGLIT_SKIP;
 	}
-	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) return PIGLIT_FAIL;
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+		fprintf(stderr,
+		        "Failed (error code: %s): Create context.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	ref_count_ptr = piglit_cl_get_context_info(cl_ctx, CL_CONTEXT_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_CONTEXT_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_CONTEXT_REFERENCE_COUNT should be 1 after creating context.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 	
 	/* increase by two and decrease by one on each itreation */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainContext(cl_ctx), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseContext(cl_ctx), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainContext(cl_ctx), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainContext(cl_ctx);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainContext: Failed (error code: %s): Retain context.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseContext(cl_ctx);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseContext: Failed (error code: %s): Release context.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainContext(cl_ctx);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainContext: Failed (error code: %s): Retain context.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_context_info(cl_ctx, CL_CONTEXT_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_CONTEXT_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_CONTEXT_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseContext(cl_ctx), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseContext(cl_ctx);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseContext: Failed (error code: %s): Release context.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_context_info(cl_ctx, CL_CONTEXT_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_CONTEXT_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_CONTEXT_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -117,8 +149,20 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_CONTEXT if context is not a valid OpenCL context.
 	 */
-	if(!piglit_cl_check_error(clReleaseContext(cl_ctx), CL_INVALID_CONTEXT)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseContext(NULL), CL_INVALID_CONTEXT)) return PIGLIT_FAIL;
+	errNo = clReleaseContext(cl_ctx);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_CONTEXT)) {
+			fprintf(stderr,
+			        "clReleaseContext: Failed (error code: %s): Trigger CL_INVALID_CONTEXT if context is not a valid context (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseContext(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_CONTEXT)) {
+			fprintf(stderr,
+			        "clReleaseContext: Failed (error code: %s): Trigger CL_INVALID_CONTEXT if context is not a valid context (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	return PIGLIT_PASS;
 }

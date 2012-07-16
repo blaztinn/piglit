@@ -52,6 +52,7 @@ piglit_cl_test(const int argc,
 {
 	int ref_count = 0;
 	const int max_ref_count = 10;
+	cl_int errNo;
 	cl_uint* ref_count_ptr;
 
 	/*** Normal usage ***/
@@ -59,41 +60,74 @@ piglit_cl_test(const int argc,
 	cl_command_queue command_queue = clCreateCommandQueue(env->context.cl_ctx,
 	                                                      env->device_id,
 	                                                      0,
-	                                                      NULL);
+	                                                      &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+		fprintf(stderr,
+		        "Failed (error code: %s): Create a command queue.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	ref_count_ptr = piglit_cl_get_command_queue_info(command_queue, CL_QUEUE_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_QUEUE_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_QUEUE_REFERENCE_COUNT should be 1 after creating command queue.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 
 	/* increase by two and decrease by one on each itreation */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainCommandQueue(command_queue), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseCommandQueue(command_queue), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainCommandQueue(command_queue), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainCommandQueue(command_queue);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainCommandQueue: Failed (error code: %s): Retain command queue.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseCommandQueue(command_queue);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseCommandQueue: Failed (error code: %s): Release command queue.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainCommandQueue(command_queue);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainCommandQueue: Failed (error code: %s): Retain command queue.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_command_queue_info(command_queue, CL_QUEUE_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_QUEUE_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_QUEUE_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseCommandQueue(command_queue), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseCommandQueue(command_queue);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseCommandQueue: Failed (error code: %s): Release command queue.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_command_queue_info(command_queue, CL_QUEUE_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_QUEUE_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_QUEUE_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -105,8 +139,20 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command-queue.
 	 */
-	if(!piglit_cl_check_error(clReleaseCommandQueue(command_queue), CL_INVALID_COMMAND_QUEUE)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseCommandQueue(NULL), CL_INVALID_COMMAND_QUEUE)) return PIGLIT_FAIL;
+	errNo = clReleaseCommandQueue(command_queue);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_COMMAND_QUEUE)) {
+			fprintf(stderr,
+			        "clReleaseCommandQueue: Failed (error code: %s): Trigger CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command-queue (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseCommandQueue(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_COMMAND_QUEUE)) {
+			fprintf(stderr,
+			        "clReleaseCommandQueue: Failed (error code: %s): Trigger CL_INVALID_COMMAND_QUEUE if command_queue is not a valid command-queue (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	return PIGLIT_PASS;
 }

@@ -53,6 +53,7 @@ piglit_cl_test(const int argc,
                const struct piglit_cl_api_test_config* config,
                const struct piglit_cl_api_test_env* env)
 {
+	cl_int errNo;
 	cl_program program;
 
 	/*** Normal usage ***/
@@ -60,7 +61,13 @@ piglit_cl_test(const int argc,
 	program = piglit_cl_build_program_with_source(env->context, 1, &dummy_kernel, "");
 
 	/* Always returns CL_SUCCESS */
-	if(!piglit_cl_check_error(clUnloadCompiler(), CL_SUCCESS)) return PIGLIT_FAIL;
+	errNo = clUnloadCompiler();
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Unload compiler.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	/* Building again reloads compiler */
 	clReleaseProgram(program);

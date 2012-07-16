@@ -55,6 +55,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 
 	size_t param_value_size;
 	void* param_value;
@@ -67,22 +68,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_device_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(device_infos[i]));
 
-		if(!piglit_cl_check_error(clGetDeviceInfo(env->device_id,
-		                                          device_infos[i],
-		                                          0,
-		                                          NULL,
-		                                          &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetDeviceInfo(env->device_id,
+		                        device_infos[i],
+		                        0,
+		                        NULL,
+		                        &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(device_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
+			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetDeviceInfo(env->device_id,
-		                                          device_infos[i],
-		                                          param_value_size,
-		                                          param_value,
-		                                          NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetDeviceInfo(env->device_id,
+		                        device_infos[i],
+		                        param_value_size,
+		                        param_value,
+		                        NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(device_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -99,33 +109,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetDeviceInfo(env->device_id,
-	                                          CL_DEVICE_VERSION,
-	                                          1,
-	                                          param_value,
-	                                          NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetDeviceInfo(env->device_id,
+	                        CL_DEVICE_VERSION,
+	                        1,
+	                        param_value,
+	                        NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
-	if(!piglit_cl_check_error(clGetDeviceInfo(env->device_id,
-	                                          CL_PLATFORM_NAME,
-	                                          0,
-	                                          NULL,
-	                                          &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetDeviceInfo(env->device_id,
+	                        CL_PLATFORM_NAME,
+	                        0,
+	                        NULL,
+	                        &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
 	/*
 	 * CL_INVALID_DEVICE if device is not a valid device.
 	 */
-	if(!piglit_cl_check_error(clGetDeviceInfo(NULL,
-	                                          CL_DEVICE_NAME,
-	                                          0,
-	                                          NULL,
-	                                          &param_value_size),
-	                          CL_INVALID_DEVICE)) {
+	errNo = clGetDeviceInfo(NULL,
+	                        CL_DEVICE_NAME,
+	                        0,
+	                        NULL,
+	                        &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_DEVICE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_DEVICE if device is not a valid device.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

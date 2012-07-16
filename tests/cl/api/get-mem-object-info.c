@@ -71,7 +71,9 @@ piglit_cl_test(const int argc,
 	                        NULL,
 	                        &errNo);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
-		printf("Can't create buffer.\n");
+		fprintf(stderr,
+		        "Failed (error code: %s): Create an event by enqueueing a buffer read.\n",
+		        piglit_cl_get_error_name(errNo));
 		return PIGLIT_FAIL;
 	}
 
@@ -79,23 +81,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_mem_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(mem_infos[i]));
 
-		if(!piglit_cl_check_error(clGetMemObjectInfo(memobj,
-		                                             mem_infos[i],
-		                                             0,
-		                                             NULL,
-		                                             &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetMemObjectInfo(memobj,
+		                           mem_infos[i],
+		                           0,
+		                           NULL,
+		                           &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(mem_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetMemObjectInfo(memobj,
-		                                             mem_infos[i],
-		                                             param_value_size,
-		                                             param_value,
-		                                             NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetMemObjectInfo(memobj,
+		                           mem_infos[i],
+		                           param_value_size,
+		                           param_value,
+		                           NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(mem_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -112,33 +122,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetMemObjectInfo(memobj,
-	                                             CL_DEVICE_NAME,
-	                                             0,
-	                                             NULL,
-	                                             &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetMemObjectInfo(memobj,
+	                           CL_DEVICE_NAME,
+	                           0,
+	                           NULL,
+	                           &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetMemObjectInfo(memobj,
-	                                             CL_MEM_TYPE,
-	                                             1,
-	                                             param_value,
-	                                             NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetMemObjectInfo(memobj,
+	                           CL_MEM_TYPE,
+	                           1,
+	                           param_value,
+	                           NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
 	 * CL_INVALID_MEM_OBJECT if memobj is a not a valid memory object.
 	 */
-	if(!piglit_cl_check_error(clGetMemObjectInfo(NULL,
-	                                             CL_MEM_TYPE,
-	                                             0,
-	                                             NULL,
-	                                             &param_value_size),
-	                          CL_INVALID_MEM_OBJECT)) {
+	errNo = clGetMemObjectInfo(NULL,
+	                           CL_MEM_TYPE,
+	                           0,
+	                           NULL,
+	                           &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_MEM_OBJECT)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_MEM_OBJECT if memobj is not a valid memory object.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

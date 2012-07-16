@@ -55,6 +55,7 @@ piglit_cl_test(const int argc,
 	enum piglit_result result = PIGLIT_PASS;
 
 	int i;
+	cl_int errNo;
 
 	size_t param_value_size;
 	void* param_value;
@@ -67,22 +68,31 @@ piglit_cl_test(const int argc,
 	for(i = 0; i < num_platform_infos; i++) {
 		printf("%s: ", piglit_cl_get_enum_name(platform_infos[i]));
 
-		if(!piglit_cl_check_error(clGetPlatformInfo(env->platform_id,
-		                                            platform_infos[i],
-		                                            0,
-		                                            NULL,
-		                                            &param_value_size),
-		                          CL_SUCCESS)) {
+		errNo = clGetPlatformInfo(env->platform_id,
+		                          platform_infos[i],
+		                          0,
+		                          NULL,
+		                          &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(platform_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
+			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetPlatformInfo(env->platform_id,
-		                                            platform_infos[i],
-		                                            param_value_size,
-		                                            param_value,
-		                                            NULL),
-		                          CL_SUCCESS)) {
+		errNo = clGetPlatformInfo(env->platform_id,
+		                          platform_infos[i],
+		                          param_value_size,
+		                          param_value,
+		                          NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(platform_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -98,33 +108,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetPlatformInfo(env->platform_id,
-	                                            CL_PLATFORM_PROFILE,
-	                                            1,
-	                                            param_value,
-	                                            NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetPlatformInfo(env->platform_id,
+	                          CL_PLATFORM_PROFILE,
+	                          1,
+	                          param_value,
+	                          NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetPlatformInfo(env->platform_id,
-	                                            CL_DEVICE_NAME,
-	                                            0,
-	                                            NULL,
-	                                            &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetPlatformInfo(env->platform_id,
+	                          CL_DEVICE_NAME,
+	                          0,
+	                          NULL,
+	                          &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
 	/*
 	 * CL_INVALID_PLATFORM if platform is not a valid platform.
 	 */
-	if(!piglit_cl_check_error(clGetPlatformInfo(NULL,
-	                                            CL_PLATFORM_PROFILE,
-	                                            0,
-	                                            NULL,
-	                                            &param_value_size),
-	                          CL_INVALID_PLATFORM)) {
+	errNo = clGetPlatformInfo(NULL,
+	                          CL_PLATFORM_PROFILE,
+	                          0,
+	                          NULL,
+	                          &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_PLATFORM)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_PLATFORM if platform is not a valid platform.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

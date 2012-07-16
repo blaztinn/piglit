@@ -98,10 +98,15 @@ piglit_cl_test(const int argc,
 	                         NULL,
 	                         &errNo);
 	if(errNo == CL_DEVICE_NOT_FOUND) {
-		printf("No available devices.\n");
+		fprintf(stderr, "No available devices.\n");
 		return PIGLIT_SKIP;
 	}
-	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) return PIGLIT_FAIL;
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create context.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	/*
 	 * For each command queue properties mix.
@@ -115,6 +120,10 @@ piglit_cl_test(const int argc,
 		                                     &errNo);
 		if(errNo != CL_SUCCESS && errNo != CL_INVALID_QUEUE_PROPERTIES) {
 			piglit_cl_check_error(errNo, CL_SUCCESS);
+			fprintf(stderr,
+			        "Failed (error code: %s): Create command queue using 0x%X as command queue properties.\n",
+			        piglit_cl_get_error_name(errNo),
+			        (unsigned int)mixed_command_queue_properties);
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 		clReleaseCommandQueue(command_queue);
@@ -125,11 +134,11 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_CONTEXT if context is not a valid context.
 	 */
-	clCreateCommandQueue(NULL,
-	                     env->device_id,
-	                     0,
-	                     &errNo);
+	clCreateCommandQueue(NULL, env->device_id, 0, &errNo);
 	if(!piglit_cl_check_error(errNo, CL_INVALID_CONTEXT)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_CONTEXT if contest is not a valid context.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
@@ -137,22 +146,22 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_DEVICE if device is not a valid device or is
 	 * not associated with context.
 	 */
-	clCreateCommandQueue(cl_ctx,
-	                     NULL,
-	                     0,
-	                     &errNo);
+	clCreateCommandQueue(cl_ctx, NULL, 0, &errNo);
 	if(!piglit_cl_check_error(errNo, CL_INVALID_DEVICE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_DEVICE if device is not a valid device.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
 	num_devices = piglit_cl_get_device_ids(env->platform_id, &devices);
 	for(i = 0; i < num_devices; i++) {
 		if(devices[i] != env->device_id) {
-			clCreateCommandQueue(cl_ctx,
-			                     devices[i],
-			                     0,
-			                     &errNo);
+			clCreateCommandQueue(cl_ctx, devices[i], 0, &errNo);
 			if(!piglit_cl_check_error(errNo, CL_INVALID_DEVICE)) {
+				fprintf(stderr,
+				        "Failed (error code: %s): Trigger CL_INVALID_DEVICE if device that is not associated with context.\n",
+				        piglit_cl_get_error_name(errNo));
 				piglit_merge_result(&result, PIGLIT_FAIL);
 			}
 		}
@@ -160,22 +169,21 @@ piglit_cl_test(const int argc,
 	free(devices);
 
 	/*
+	 * CL_INVALID_VALUE if values specified in properties are not valid.
+	 */
+	clCreateCommandQueue(cl_ctx, env->device_id, 0XFFFFFFFF, &errNo);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if values specified in properties are not valid.\n",
+		        piglit_cl_get_error_name(errNo));
+		piglit_merge_result(&result, PIGLIT_FAIL);
+	}
+
+	/*
 	 * CL_INVALID_QUEUE_PROPERTIES if values specified in properties
 	 * are valid but are not supported by the device.
 	 *
 	 * Note: already tested in 'normal usage' section
-	 */
-
-	/*
-	 * CL_INVALID_VALUE if values specified in properties are not valid.
-	 *
-	 * Note: Cannot test, because there are no mutually exclusive flags
-	 *
-	 * clCreateCommandQueue(cl_ctx,
-	 *                      devices[i],
-	 *                      0XFFFFFFFF,
-	 *                      &errNo);
-	 * if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) return PIGLIT_FAIL;
 	 */
 
 	clReleaseContext(cl_ctx);

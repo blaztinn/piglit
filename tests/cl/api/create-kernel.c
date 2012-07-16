@@ -51,7 +51,8 @@ static void
 test(cl_program program,
      const char* kernel_name,
      cl_int expected_error,
-     enum piglit_result* result) {
+     enum piglit_result* result,
+     const char* test_str) {
 	cl_int errNo;
 	cl_kernel kernel;
 
@@ -59,18 +60,21 @@ test(cl_program program,
 	kernel = clCreateKernel(program, kernel_name, &errNo);
 	
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
 	if(expected_error == CL_SUCCESS) {
 		if(kernel == NULL) {
 			printf("Expecting non-NULL cl_kernel\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseKernel(kernel);
 	} else if (kernel != NULL) {
 		printf("Expecting NULL cl_kernel\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -81,12 +85,14 @@ test(cl_program program,
 	if(expected_error == CL_SUCCESS) {
 		if(kernel == NULL) {
 			printf("Expecting non-NULL cl_kernel\n");
+			fprintf(stderr, "Failed (NULL value returned): %s.\n", test_str);
 			piglit_merge_result(result, PIGLIT_FAIL);
 			return;
 		}
 		clReleaseKernel(kernel);
 	} else if (kernel != NULL) {
 		printf("Expecting NULL cl_kernel\n");
+		fprintf(stderr, "Failed (non-NULL value returned): %s.\n", test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return;
 	}
@@ -104,20 +110,17 @@ piglit_cl_test(const int argc,
 	cl_program temp_program;
 
 	/*** Normal usage ***/
-	test(env->program,
-	     "dummy_kernel",
-	     CL_SUCCESS,
-	     &result);
+	test(env->program, "dummy_kernel",
+	     CL_SUCCESS, &result, "Create kernel");
 
 	/*** Errors ***/
 
 	/*
 	 * CL_INVALID_PROGRAM if program is not a valid program object.
 	 */
-	test(NULL,
-	     "dummy_kernel",
-	     CL_INVALID_PROGRAM,
-	     &result);
+	test(NULL, "dummy_kernel",
+	     CL_INVALID_PROGRAM, &result,
+	     "Trigger CL_INVALID_PROGRAM if program is not a valid program");
 
 	/*
 	 * CL_INVALID_PROGRAM_EXECUTABLE if there is no successfully built executable for program.
@@ -128,13 +131,14 @@ piglit_cl_test(const int argc,
 	                                         NULL,
 	                                         &errNo);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
-		printf("Could not create program with source.\n");
+		fprintf(stderr,
+		        "Failed (error code: %s): Create program with source.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	} else {
-		test(temp_program,
-		     "dummy_kernel",
-		     CL_INVALID_PROGRAM_EXECUTABLE,
-		     &result);
+		test(temp_program, "dummy_kernel",
+		     CL_INVALID_PROGRAM_EXECUTABLE, &result,
+		     "Trigger CL_INVALID_PROGRAM_EXECUTABLE if there is no successfully built executable program");
 		
 		clReleaseProgram(temp_program);
 	}
@@ -142,10 +146,9 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_KERNEL_NAME if kernel_name is not found in program.
 	 */
-	test(env->program,
-	     "wrong_kernel_name",
-	     CL_INVALID_KERNEL_NAME,
-	     &result);
+	test(env->program, "wrong_kernel_name",
+	     CL_INVALID_KERNEL_NAME, &result,
+	     "Trigger CL_INVALID_KERNEL_NAME if kernel_name is not found in program");
 
 	/*
 	 * CL_INVALID_KERNEL_DEFINITION if the function definition for __kernel function given by
@@ -158,10 +161,9 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_VALUE if kernel_name is NULL.
 	 */
-	test(env->program,
-	     NULL,
-	     CL_INVALID_VALUE,
-	     &result);
+	test(env->program, NULL,
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE if kernel_name is NULL");
 
 	return result;
 }

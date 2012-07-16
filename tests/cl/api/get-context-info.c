@@ -77,30 +77,44 @@ piglit_cl_test(const int argc,
 	                                 NULL,
 	                                 &errNo);
 	if(errNo == CL_DEVICE_NOT_FOUND) {
-		printf("No available devices\n");
+		fprintf(stderr, "No available devices.\n");
 		return PIGLIT_SKIP;
 	}
-	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) return PIGLIT_FAIL;
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create context.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 	
 	for(i = 0; i < num_context_infos; i++) {
 		printf("%s ", piglit_cl_get_enum_name(context_infos[i]));
 
-		if(!piglit_cl_check_error(clGetContextInfo(cl_ctx,
+		errNo = clGetContextInfo(cl_ctx,
 		                                           context_infos[i],
 		                                           0,
 		                                           NULL,
-		                                           &param_value_size),
-		                          CL_SUCCESS)) {
+		                                           &param_value_size);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get size of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(context_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
+			continue;
 		}
 
 		param_value = malloc(param_value_size);
-		if(!piglit_cl_check_error(clGetContextInfo(cl_ctx,
+		errNo = clGetContextInfo(cl_ctx,
 		                                           context_infos[i],
 		                                           param_value_size,
 		                                           param_value,
-		                                           NULL),
-		                          CL_SUCCESS)) {
+		                                           NULL);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "Failed (error code: %s): Get value of %s.\n",
+			        piglit_cl_get_error_name(errNo),
+			        piglit_cl_get_enum_name(context_infos[i]));
 			piglit_merge_result(&result, PIGLIT_FAIL);
 		}
 
@@ -117,33 +131,42 @@ piglit_cl_test(const int argc,
 	 * less than size of return type and param_value is not a NULL
 	 * value.
 	 */
-	if(!piglit_cl_check_error(clGetContextInfo(cl_ctx,
-	                                           CL_PLATFORM_NAME,
-	                                           0,
-	                                           NULL,
-	                                           &param_value_size),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetContextInfo(cl_ctx,
+	                         CL_PLATFORM_NAME,
+	                         0,
+	                         NULL,
+	                         &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if param_name is not one of the supported values.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	if(!piglit_cl_check_error(clGetContextInfo(cl_ctx,
-	                                           CL_CONTEXT_REFERENCE_COUNT,
-	                                           1,
-	                                           param_value,
-	                                           NULL),
-	                          CL_INVALID_VALUE)) {
+	errNo = clGetContextInfo(cl_ctx,
+	                         CL_CONTEXT_REFERENCE_COUNT,
+	                         1,
+	                         param_value,
+	                         NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_VALUE)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_VALUE if size in bytes specified by param_value is less than size of return type and param_value is not a NULL value.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 	
 	/*
-	 * CL_INVALID_CONTEXT if device is not a valid device.
+	 * CL_INVALID_CONTEXT if context is not a valid context.
 	 */
-	if(!piglit_cl_check_error(clGetContextInfo(NULL,
-	                                           CL_CONTEXT_DEVICES,
-	                                           0,
-	                                           NULL,
-	                                           &param_value_size),
-	                          CL_INVALID_CONTEXT)) {
+	errNo = clGetContextInfo(NULL,
+	                         CL_CONTEXT_DEVICES,
+	                         0,
+	                         NULL,
+	                         &param_value_size);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_CONTEXT)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Trigger CL_INVALID_CONTEXT if context is not a valid context.\n",
+		        piglit_cl_get_error_name(errNo));
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 

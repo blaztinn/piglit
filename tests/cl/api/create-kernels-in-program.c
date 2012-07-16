@@ -50,20 +50,22 @@ PIGLIT_CL_API_TEST_CONFIG_END
 
 
 static bool
-test (cl_program program,
-      cl_uint num_kernels,
-      cl_kernel *kernels,
-      cl_uint *num_kernels_ret,
-      cl_int expected_error,
-      enum piglit_result *result)
+test(cl_program program,
+     cl_uint num_kernels,
+     cl_kernel *kernels,
+     cl_uint *num_kernels_ret,
+     cl_int expected_error,
+     enum piglit_result *result,
+     const char* test_str)
 {
 	cl_int errNo;
-	
+
 	errNo = clCreateKernelsInProgram(program,
 	                                 num_kernels,
 	                                 kernels,
 	                                 num_kernels_ret);
 	if(!piglit_cl_check_error(errNo, expected_error)) {
+		fprintf(stderr, "Failed (error code: %s): %s.\n", piglit_cl_get_error_name(errNo), test_str);
 		piglit_merge_result(result, PIGLIT_FAIL);
 		return false;
 	}
@@ -87,13 +89,15 @@ piglit_cl_test(const int argc,
 
 	/*** Normal usage ***/
 	if(!test(env->program, 0, NULL, &num_kernels,
-	         CL_SUCCESS, &result)) {
+	         CL_SUCCESS, &result,
+	         "Get number of kernels in program")) {
 		return result;
 	} else {
 		kernels = malloc(num_kernels * sizeof(cl_kernel));
 
 		if(test(env->program, num_kernels, kernels, NULL,
-		     CL_SUCCESS, &result)) {
+		     CL_SUCCESS, &result,
+		     "Get all kernels in program")) {
 			for(i = 0; i < num_kernels; i++) {
 				clReleaseKernel(kernels[i]);
 			}
@@ -108,7 +112,8 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_PROGRAM if program is not a valid program object.
 	 */
 	test(NULL, 0, NULL, &num_kernels,
-	     CL_INVALID_PROGRAM, &result);
+	     CL_INVALID_PROGRAM, &result,
+	     "Trigger CL_INVALID_PROGRAM when program is not a valid program object");
 
 	/*
 	 * CL_INVALID_PROGRAM_EXECUTABLE if there is no successfully built executable for any device in
@@ -121,8 +126,14 @@ piglit_cl_test(const int argc,
 	                                         &errNo);
 	if(piglit_cl_check_error(errNo, CL_SUCCESS)) {
 		test(temp_program, 0, NULL, &num_kernels,
-		     CL_INVALID_PROGRAM_EXECUTABLE, &result);
+		     CL_INVALID_PROGRAM_EXECUTABLE, &result,
+		     "Trigger CL_INVALID_PROGRAM_EXECUTABLE when there is no successfully built executable for any device in program");
 		clReleaseProgram(temp_program);
+	} else {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create program with source.\n",
+		        piglit_cl_get_error_name(errNo));
+		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
 	/*
@@ -130,7 +141,8 @@ piglit_cl_test(const int argc,
 	 * program.
 	 */
 	test(env->program, 1, kernels, NULL,
-	     CL_INVALID_VALUE, &result);
+	     CL_INVALID_VALUE, &result,
+	     "Trigger CL_INVALID_VALUE when kernels is not NULL and num_kernels is less than number of kernels in program.");
 
 	return result;
 }

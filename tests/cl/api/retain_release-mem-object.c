@@ -52,6 +52,7 @@ piglit_cl_test(const int argc,
 {
 	int ref_count = 0;
 	const int max_ref_count = 10;
+	cl_int errNo;
 	cl_uint* ref_count_ptr;
 
 	/*** Normal usage ***/
@@ -60,41 +61,74 @@ piglit_cl_test(const int argc,
 	                               CL_MEM_READ_WRITE,
 	                               512,
 	                               NULL,
-	                               NULL);
+	                               &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Failed (error code: %s): Create buffer.\n",
+		        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	ref_count_ptr = piglit_cl_get_mem_object_info(memobj, CL_MEM_REFERENCE_COUNT);
 	if(*ref_count_ptr != 1) {
 		free(ref_count_ptr);
-		printf("Invalid CL_MEM_REFERENCE_COUNT.\n");
+		fprintf(stderr,
+		        "CL_MEM_REFERENCE_COUNT should be 1 after creating memory object.\n");
 		return PIGLIT_FAIL;
 	}
 	free(ref_count_ptr);
 
 	/* increase by two and decrease by one on each iteration */
 	for(ref_count = 1; ref_count < max_ref_count; ref_count++) {
-		if(!piglit_cl_check_error(clRetainMemObject(memobj), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clReleaseMemObject(memobj), CL_SUCCESS)) return PIGLIT_FAIL;
-		if(!piglit_cl_check_error(clRetainMemObject(memobj), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clRetainMemObject(memobj);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+			fprintf(stderr,
+			        "clRetainMemObject: Failed (error code: %s): Retain memory object.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clReleaseMemObject(memobj);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseMemObject: Failed (error code: %s): Release memory object.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
+		errNo = clRetainMemObject(memobj);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clRetainMemObject: Failed (error code: %s): Retain memory object.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		ref_count_ptr = piglit_cl_get_mem_object_info(memobj, CL_MEM_REFERENCE_COUNT);
 		if(*ref_count_ptr != (ref_count+1)) {
 			free(ref_count_ptr);
-			printf("Invalid CL_MEM_REFERENCE_COUNT.\n");
+			fprintf(stderr,
+			        "CL_MEM_REFERENCE_COUNT is not changing accordingly.\n");
 			return PIGLIT_FAIL;
 		}
 		free(ref_count_ptr);
 	}
 	/* Decrease reference count to 0 */
 	for(ref_count = max_ref_count; ref_count > 0; ref_count--) {
-		if(!piglit_cl_check_error(clReleaseMemObject(memobj), CL_SUCCESS)) return PIGLIT_FAIL;
+		errNo = clReleaseMemObject(memobj);
+		if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
+			fprintf(stderr,
+			        "clReleaseMemObject: Failed (error code: %s): Release memory object.\n",
+			        piglit_cl_get_error_name(errNo));
+			return PIGLIT_FAIL;
+		}
 
-		/* check internal value of context reference count */
+		/* check internal value of reference count */
 		if(ref_count > 1) {
 			ref_count_ptr = piglit_cl_get_mem_object_info(memobj, CL_MEM_REFERENCE_COUNT);
 			if(*ref_count_ptr != (ref_count-1)) {
 				free(ref_count_ptr);
-				printf("Invalid CL_MEM_REFERENCE_COUNT.\n");
+				fprintf(stderr,
+				        "CL_MEM_REFERENCE_COUNT is not changing accordingly.\n");
 				return PIGLIT_FAIL;
 			}
 			free(ref_count_ptr);
@@ -104,10 +138,22 @@ piglit_cl_test(const int argc,
 	/*** Errors ***/
 
 	/*
-	 * CL_INVALID_MEM_OBJECT if memobj is a not a valid memory object.
+	 * CL_INVALID_MEM_OBJECT if mem_object is not a valid mem_object object (buffer or image object).
 	 */
-	if(!piglit_cl_check_error(clReleaseMemObject(memobj), CL_INVALID_MEM_OBJECT)) return PIGLIT_FAIL;
-	if(!piglit_cl_check_error(clReleaseMemObject(NULL), CL_INVALID_MEM_OBJECT)) return PIGLIT_FAIL;
+	errNo = clReleaseMemObject(memobj);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_MEM_OBJECT)) {
+			fprintf(stderr,
+			        "clReleaseMemObject: Failed (error code: %s): Trigger CL_INVALID_MEM_OBJECT if memOBJ is not a valid memory object (already released).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
+	errNo = clReleaseMemObject(NULL);
+	if(!piglit_cl_check_error(errNo, CL_INVALID_MEM_OBJECT)) {
+			fprintf(stderr,
+			        "clReleaseMemObject: Failed (error code: %s): Trigger CL_INVALID_MEM_OBJECT if memobj is not a valid memory object (NULL).\n",
+			        piglit_cl_get_error_name(errNo));
+		return PIGLIT_FAIL;
+	}
 
 	return PIGLIT_PASS;
 }
