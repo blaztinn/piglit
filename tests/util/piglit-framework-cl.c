@@ -21,7 +21,11 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
+#include <regex.h>
+
 #include "piglit-framework-cl.h"
+
 
 /* Default test header configuration values */
 const struct piglit_cl_test_config_header PIGLIT_CL_DEFAULT_TEST_CONFIG_HEADER = {
@@ -30,6 +34,15 @@ const struct piglit_cl_test_config_header PIGLIT_CL_DEFAULT_TEST_CONFIG_HEADER =
 
 	.run_per_platform = false,
 	.run_per_device = false,
+
+	.platform_regex = "",
+	.device_regex = "",
+
+	.require_platform_extensions = NULL,
+	.require_device_extensions = NULL,
+
+	.init_func = NULL,
+	.clean_func = NULL,
 };
 
 
@@ -55,7 +68,7 @@ print_test_info(const struct piglit_cl_test_config_header* config,
 			free(device_name);
 		}
 
-		printf("  Version: %d.%d\n", version/10, version%10);
+		printf("  OpenCL version: %d.%d\n", version/10, version%10);
 
 		free(platform_name);
 	} else {
@@ -63,7 +76,49 @@ print_test_info(const struct piglit_cl_test_config_header* config,
 	}
 }
 
+/* Check extensions */
 
+bool check_platform_extensions(cl_platform_id platform_id, char* extensions)
+{
+	char* pch;
+
+	pch = strtok(extensions, " ");
+	while(pch != NULL) {
+		if(strlen(pch) > 0 && !piglit_cl_is_platform_extension_supported(platform_id, pch)) {
+			char* platform_name = piglit_cl_get_platform_info(platform_id, CL_PLATFORM_NAME);
+			printf("Skipping platform %s because extension %s is not supported.\n",
+			       platform_name,
+			       pch);
+			free(platform_name);
+			return false;
+		}
+		pch = strtok(NULL, " ");
+	}
+
+	return true;
+}
+
+bool check_device_extensions(cl_device_id device_id, char* extensions)
+{
+	char* pch;
+
+	pch = strtok(extensions, " ");
+	while(pch != NULL) {
+		if(strlen(pch) > 0 && !piglit_cl_is_device_extension_supported(device_id, pch)) {
+			char* device_name = piglit_cl_get_device_info(device_id, CL_DEVICE_NAME);
+			printf("Skipping device %s because extension %s is not supported.\n",
+			       device_name,
+			       pch);
+			free(device_name);
+			return false;
+		}
+		pch = strtok(NULL, " ");
+	}
+
+	return true;
+}
+
+/* Run the test(s) */
 int piglit_cl_framework_run(int argc, char** argv)
 {
 	enum piglit_result result = PIGLIT_SKIP;
@@ -73,7 +128,12 @@ int piglit_cl_framework_run(int argc, char** argv)
 
 	/* Get test configuration */
 	struct piglit_cl_test_config_header *config =
-	    piglit_cl_get_test_config(&PIGLIT_CL_DEFAULT_TEST_CONFIG_HEADER);
+	    piglit_cl_get_test_config(argc, (const char**)argv, &PIGLIT_CL_DEFAULT_TEST_CONFIG_HEADER);
+
+	/* Init */
+	if(config->init_func != NULL) {
+		config->init_func(argc, (const char**)argv, config);
+	}
 
 	/* Print test name and file */
 	if(config->name != NULL) {
@@ -113,19 +173,31 @@ int piglit_cl_framework_run(int argc, char** argv)
 	} else {
 		/* Run tests per platform or device */
 		int i;
+		regex_t platform_regex;
+		regex_t device_regex;
 
 		bool platform_defined;
-		bool device_defined;
-
 		unsigned int num_platforms;
 		cl_platform_id* platform_ids;
 
-		/* check for command-line platform argument */
+		/* Create regexes */
+		if(regcomp(&platform_regex, config->platform_regex, REG_EXTENDED | REG_NEWLINE)) {
+			fprintf(stderr,
+			        "Regex to filter platforms is invalid, ignoring it.\n");
+			regcomp(&platform_regex, "", REG_EXTENDED | REG_NEWLINE);
+		}
+		if(regcomp(&device_regex, config->device_regex, REG_EXTENDED | REG_NEWLINE)) {
+			fprintf(stderr,
+			        "Regex to filter devices is invalid, ignoring it.\n");
+			regcomp(&device_regex, "", REG_EXTENDED | REG_NEWLINE);
+		}
+
+		/* check for command-line/environment platform */
 		platform_defined = piglit_cl_get_platform_arg(argc, (const char**)argv, &platform_id);
 
 		/* generate platforms list */
 		if(platform_defined) {
-			/* use platform defined by command-line argument */
+			/* use platform defined by command-line/environment */
 			num_platforms = 1;
 			platform_ids = malloc(sizeof(cl_platform_id));
 			platform_ids[0] = platform_id;
@@ -137,55 +209,107 @@ int piglit_cl_framework_run(int argc, char** argv)
 		/* execute test for each platform in platforms list */
 		for(i = 0; i < num_platforms; i++) {
 			int platform_version;
+			char* platform_name;
 
 			platform_id = platform_ids[i];
-			
+
+			/* Filter platform */
+			platform_name = piglit_cl_get_platform_info(platform_id, CL_PLATFORM_NAME);
+			if(regexec(&platform_regex, platform_name, 0, NULL, 0)) {
+				printf("Skipping platform %s because it does not match platform_regex.\n",
+				       platform_name);
+				free(platform_name);
+				continue;
+			}
+			free(platform_name);
+
+			/* Check platform extensions */
+			if(!check_platform_extensions(platform_id, config->require_platform_extensions)) {
+				continue;
+			}
+
 			/* Check platform version */
 			platform_version = piglit_cl_get_platform_version(platform_id);
 			if(platform_version < version) {
-				printf("  Platform supporting only version %d.%d. Running test on that version.\n",
+				printf("ˇˇPlatform supporting only version %d.%d. Running test on that version.\n",
 				       platform_version/10, platform_version%10);
 				version = platform_version;
 			}
 
-			/* check for command-line device argument */
-			device_defined = piglit_cl_get_device_arg(argc, (const char**)argv, platform_id, &device_id);
-
-			if(device_defined) {
-				/* use device defined by command-line argument */
-				print_test_info(config, version, platform_id, device_id);
+			if(config->run_per_platform) {
+				/* run test on platform */
+				print_test_info(config, version, platform_id, NULL);
 				piglit_merge_result(&result,
-				                    config->_test_run(argc, (const char**)argv, (void*)config, version, platform_id, device_id));
-			} else {
-				/* use all available devices */
+									config->_test_run(argc, (const char**)argv, (void*)config, version, platform_id, NULL));
+			} else { //config->run_per_device
+				int j;
+
+				bool device_defined;
 				unsigned int num_devices;
 				cl_device_id* device_ids;
 
-				/* get devices list available on platform */
-				num_devices = piglit_cl_get_device_ids(platform_id, CL_DEVICE_TYPE_ALL, &device_ids);
+				/* check for command-line/environment device */
+				device_defined = piglit_cl_get_device_arg(argc, (const char**)argv, platform_id, &device_id);
 
-				if(config->run_per_device) {
-					unsigned int j;
-					/* run tests per each device */
-					for(j = 0; j < num_devices; j++) {
-						device_id = device_ids[j];
-
-						print_test_info(config, version, platform_id, device_id);
-						piglit_merge_result(&result,
-						                    config->_test_run(argc, (const char**)argv, (void*)config, version, platform_id, device_id));
-					}
+				/* generate devices list */
+				if(device_defined) {
+					/* use device defined by command-line/environment */
+					num_devices = 1;
+					device_ids = malloc(sizeof(cl_device_id));
+					device_ids[0] = device_id;
 				} else {
-					/* run test per each platform */
-					print_test_info(config, version, platform_id, NULL);
+					/* use all available devices */
+					num_devices = piglit_cl_get_device_ids(platform_id, CL_DEVICE_TYPE_ALL, &device_ids);
+				}
+
+				/* run tests per each device */
+				for(j = 0; j < num_devices; j++) {
+					int device_version;
+					char* device_name;
+
+					device_id = device_ids[j];
+
+					/* Filter device */
+					device_name = piglit_cl_get_device_info(device_id, CL_DEVICE_NAME);
+					if(regexec(&device_regex, device_name, 0, NULL, 0)) {
+						printf("Skipping device %s because it does not match device_regex.\n",
+						       device_name);
+						free(device_name);
+						continue;
+					}
+					free(device_name);
+
+					/* Check device extensions */
+					if(!check_device_extensions(device_id, config->require_device_extensions)) {
+						continue;
+					}
+
+					/* Check device version */
+					device_version = piglit_cl_get_device_version(device_id);
+					if(device_version < version) {
+						printf("ˇˇDevice supporting only version %d.%d. Running test on that version.\n",
+							   device_version/10, device_version%10);
+						version = device_version;
+					}
+
+					print_test_info(config, version, platform_id, device_id);
 					piglit_merge_result(&result,
-					                    config->_test_run(argc, (const char**)argv, (void*)config, version, platform_id, NULL));
+										config->_test_run(argc, (const char**)argv, (void*)config, version, platform_id, device_id));
 				}
 
 				free(device_ids);
 			}
 		}
 
+		regfree(&platform_regex);
+		regfree(&device_regex);
+
 		free(platform_ids);
+	}
+
+	/* Clean */
+	if(config->clean_func != NULL) {
+		config->clean_func(argc, (const char**)argv, config);
 	}
 
 	/* Report merged result */
@@ -195,6 +319,7 @@ int piglit_cl_framework_run(int argc, char** argv)
 	return 1;
 }
 
+/* Get command-line/environment variables */
 
 const char*
 piglit_cl_get_arg_value(const int argc, const char *argv[], const char* arg)
@@ -208,7 +333,7 @@ piglit_cl_get_arg_value(const int argc, const char *argv[], const char* arg)
 		if (!strcmp(argv[i], full_arg)) {
 			if ((i+1) >= argc) {
 				fprintf(stderr,
-				        "Argument error: %s requires an argument\n",
+				        "Argument error: %s requires a value\n",
 				        full_arg);
 				free(full_arg);
 				piglit_report_result(PIGLIT_FAIL);
@@ -220,6 +345,26 @@ piglit_cl_get_arg_value(const int argc, const char *argv[], const char* arg)
 	}
 
 	free(full_arg);
+	return NULL;
+}
+
+const char*
+piglit_cl_get_unnamed_arg(const int argc, const char *argv[], int index)
+{
+	int i;
+	int count = 0;
+
+	for (i = 1; i < argc; i++) {
+		if (strncmp(argv[i], "-", 1)) {
+			count++;
+			if((count - 1) == index) {
+				return argv[i];
+			}
+		} else {
+			i++;
+		}
+	}
+
 	return NULL;
 }
 
@@ -247,7 +392,13 @@ int piglit_cl_get_version_arg(int argc, const char** argv)
 	int version_major = 0;
 	int version_minor = 0;
 
-	const char* version_str = piglit_cl_get_arg_value(argc, argv, "version");
+	const char* version_str;
+
+	/* First check argument then environment */
+	version_str = piglit_cl_get_arg_value(argc, argv, "version");
+	if(version_str == NULL) {
+		version_str = getenv("PIGLIT_CL_VERSION");
+	}
 
 	if(version_str != NULL) {
 		if(sscanf(version_str, "%i.%i", &version_major, &version_minor) != 2) {
@@ -262,7 +413,13 @@ int piglit_cl_get_version_arg(int argc, const char** argv)
 bool piglit_cl_get_platform_arg(const int argc, const char** argv, cl_platform_id* platform_id)
 {
 	int i;
-	const char* arg_value = piglit_cl_get_arg_value(argc, argv, "platform");
+	const char* arg_value;
+
+	/* First check argument then environment */
+	arg_value = piglit_cl_get_arg_value(argc, argv, "platform");
+	if(arg_value == NULL) {
+		arg_value = getenv("PIGLIT_CL_PLATFORM");
+	}
 
 	if(arg_value != NULL) {
 		unsigned int num_platforms;
@@ -297,7 +454,13 @@ bool piglit_cl_get_platform_arg(const int argc, const char** argv, cl_platform_i
 bool piglit_cl_get_device_arg(const int argc, const char** argv, cl_platform_id platform_id, cl_device_id* device_id)
 {
 	int i;
-	const char* arg_value = piglit_cl_get_arg_value(argc, argv, "device");
+	const char* arg_value;
+
+	/* First check argument then environment */
+	arg_value = piglit_cl_get_arg_value(argc, argv, "device");
+	if(arg_value == NULL) {
+		arg_value = getenv("PIGLIT_CL_DEVICE");
+	}
 
 	if(arg_value != NULL) {
 		unsigned int num_devices;

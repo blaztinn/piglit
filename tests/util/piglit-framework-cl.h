@@ -28,6 +28,8 @@
 #include "piglit-util-cl.h"
 
 
+struct piglit_cl_test_config_header;
+
 /**
  * \brief Get an empty test configuration with default values.
  *
@@ -56,6 +58,38 @@ typedef enum piglit_result piglit_cl_test_run_t(const int argc,
                                                 cl_platform_id platform_id,
                                                 cl_device_id device_id);
 
+/**
+ * \brief Initialize test configuration.
+ *
+ * Type definition for a function that is passed to \c config.init_func. This
+ * function is intended to be used to fill the \c config when there needs to
+ * be some input processing.
+ *
+ * \note This function is called once before running test(s).
+ *
+ * @param argc         Argument count passed to \c main().
+ * @param argv         Argument vector passed to \c main().
+ * @param config       Test configuration.
+ */
+typedef void piglit_cl_test_init_t(const int argc,
+                                   const char** argv,
+                                   struct piglit_cl_test_config_header* config);
+/**
+ * \brief Clean environment.
+ *
+ * Type definition for a function that is passed to \c config.clean_func. This
+ * function is intended to be used to clean memory after finishing all tests.
+ *
+ * \note This function is called once after running test(s).
+ *
+ * @param argc         Argument count passed to \c main().
+ * @param argv         Argument vector passed to \c main().
+ * @param config       Test configuration.
+ */
+typedef void piglit_cl_test_clean_t(const int argc,
+                                    const char** argv,
+                                    struct piglit_cl_test_config_header* config);
+
 
 #define PIGLIT_CL_TEST_CONFIG_HEADER                                         \
         char* _filename; /**< Read-only test filename. (internal) */         \
@@ -65,7 +99,22 @@ typedef enum piglit_result piglit_cl_test_run_t(const int argc,
         char* name; /**< Name of test. (optional) */                         \
                                                                              \
         bool run_per_platform; /**< Run test per platform. (optional) */     \
-        bool run_per_device; /**< Run test per device. (optional) */
+        bool run_per_device; /**< Run test per device. (optional) */         \
+                                                                             \
+        char* platform_regex;                                                \
+          /**< Regex to filter platforms (optional) */                       \
+        char* device_regex;                                                  \
+          /**< Regex to filter devices (optional) */                         \
+                                                                             \
+        char* require_platform_extensions;                                   \
+          /**< Space-separated list of required platform extensions (optional) */ \
+        char* require_device_extensions;                                     \
+          /**< Space-separated list of required device extensions (optional) */ \
+                                                                             \
+        piglit_cl_test_init_t* init_func;                                    \
+          /**< Function pointer to initialize environment. (optional) */     \
+        piglit_cl_test_clean_t* clean_func;                                  \
+          /**< Function pointer to clean environment. (optional) */
 
 /**
  * \brief OpenCL test configuration header.
@@ -82,7 +131,9 @@ struct piglit_cl_test_config_header {
  *
  * Every test has this function defined.
  */
-extern void* piglit_cl_get_test_config(const struct piglit_cl_test_config_header* config_header);
+extern void* piglit_cl_get_test_config(const int argc,
+                                       const char** argv,
+                                       const struct piglit_cl_test_config_header* config_header);
 
 /**
  * \def PIGLIT_CL_TEST_CONFIG_BEGIN(test_config_struct_t)
@@ -125,6 +176,8 @@ extern void* piglit_cl_get_test_config(const struct piglit_cl_test_config_header
                                                                           \
         void*                                                             \
         piglit_cl_get_test_config(                                        \
+            const int argc,                                               \
+            const char** argv,                                            \
             const struct piglit_cl_test_config_header* config_header_ptr) \
         {                                                                 \
             piglit_cl_get_empty_test_config_t* _get_empty_config =        \
@@ -220,15 +273,29 @@ bool piglit_cl_is_arg_defined(int argc, const char** argv, const char* arg);
  *
  * @param argc         Argument count passed to \c main().
  * @param argv         Argument vector passed to \c main().
- * @param arg          Returns platform id.
+ * @param arg          Argument to retrieve.
  * @return             Returns value passed by argument or NULL.
  */
 const char* piglit_cl_get_arg_value(const int argc, const char** argv, const char* arg);
 
 /**
+ * \brief Get unnamed argument value passed to program.
+ *
+ * Get value index-th (zero based) unnamed argument passed to program.
+ *
+ * @param argc         Argument count passed to \c main().
+ * @param argv         Argument vector passed to \c main().
+ * @param index        Index of argument to retrieve
+ * @return             Returns value passed by argument or NULL.
+ */
+const char* piglit_cl_get_unnamed_arg(const int argc, const char** argv, int index);
+
+/**
  * \brief Get version passed to program.
  *
- * Get value passed after argument "-version".
+ * Get value passed after argument "-version". If version
+ * argument is not defined use PIGLIT_CL_VERSION environment
+ * variable.
  *
  * @param argc  Argument count passed to \c main().
  * @param argv  Argument vector passed to \c main().
@@ -240,7 +307,9 @@ int piglit_cl_get_version_arg(int argc, const char** argv);
  * \brief Get platform id passed to program.
  *
  * Return a platform id with its name starting with value
- * of argument passed after argument "-platform".
+ * of argument passed after argument "-platform". If platform
+ * argument is not defined use PIGLIT_CL_PLATFORM environment
+ * variable.
  *
  * @param argc         Argument count passed to \c main().
  * @param argv         Argument vector passed to \c main().
@@ -253,7 +322,9 @@ bool piglit_cl_get_platform_arg(const int argc, const char** argv, cl_platform_i
  * \brief Get device id passed to program.
  *
  * Return a device id with its name starting with value
- * of argument passed after argument "-device".
+ * of argument passed after argument "-device". If device
+ * argument is not defined use PIGLIT_CL_DEVICE environment
+ * variable.
  *
  * @param argc         Argument count passed to \c main().
  * @param argv         Argument vector passed to \c main().
