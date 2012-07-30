@@ -75,13 +75,15 @@ int piglit_cl_get_platform_version(cl_platform_id platform)
 
 	/* Interpret version number */
 	scanf_count = sscanf(version_number_string, "%i.%i", &major, &minor);
-	free(version_string);
 	if (scanf_count != 2) {
 		printf("Unable to interpret CL_PLATFORM_VERSION string: %s\n",
 		       version_string);
+		free(version_string);
 		piglit_report_result(PIGLIT_FAIL);
 		exit(1);
 	}
+	free(version_string);
+
 	return 10*major+minor;
 }
 
@@ -284,7 +286,7 @@ void piglit_cl_require_platform_extension(cl_platform_id platform, const char *n
 void piglit_cl_require_not_platform_extension(cl_platform_id platform, const char *name)
 {
 	if (piglit_cl_is_platform_extension_supported(platform, name)) {
-		printf("Test requires absence of %s\n platform extension", name);
+		printf("Test requires absence of %s\n platform extension\n", name);
 		piglit_report_result(PIGLIT_SKIP);
 		exit(1);
 	}
@@ -326,9 +328,10 @@ unsigned int piglit_cl_get_platform_ids(cl_platform_id** platform_ids)
 	/* get number of platforms */
 	errNo = clGetPlatformIDs(0, NULL, &num_platform_ids);
 	if(errNo != CL_SUCCESS) {
-		printf("Could not get number of platforms: %s\n",
-		       piglit_cl_get_error_name(errNo));
-		piglit_report_result(PIGLIT_FAIL);
+		fprintf(stderr,
+		        "Could not get number of platforms: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return 0;
 	}
 
 	/* get platform list */
@@ -336,16 +339,19 @@ unsigned int piglit_cl_get_platform_ids(cl_platform_id** platform_ids)
 		*platform_ids = malloc(num_platform_ids * sizeof(cl_platform_id));
 		errNo = clGetPlatformIDs(num_platform_ids, *platform_ids, NULL);
 		if(errNo != CL_SUCCESS) {
-			printf("Could not get get platform list: %s\n",
-			       piglit_cl_get_error_name(errNo));
-			piglit_report_result(PIGLIT_FAIL);
+			free(platform_ids);
+			*platform_ids = malloc(0);
+			fprintf(stderr,
+			        "Could not get get platform list: %s\n",
+			        piglit_cl_get_error_name(errNo));
+			return 0;
 		}
 	}
 
 	return num_platform_ids;
 }
 
-unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_id** device_ids)
+unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_type device_type, cl_device_id** device_ids)
 {
 	cl_int errNo;
 	cl_uint num_device_ids;
@@ -361,15 +367,21 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_id**
 		if(platform_ids[i] == platform_id) {
 			/* get number of devices */
 			errNo = clGetDeviceIDs(platform_id,
-			                       CL_DEVICE_TYPE_ALL,
+			                       device_type,
 			                       0,
 			                       NULL,
 			                       &num_device_ids);
+			if(errNo == CL_DEVICE_NOT_FOUND) {
+				*device_ids = malloc(0);
+				return 0;
+			}
 			if(errNo != CL_SUCCESS) {
 				free(platform_ids);
-				printf("Could not get number of devices: %s\n",
-				       piglit_cl_get_error_name(errNo));
-				piglit_report_result(PIGLIT_FAIL);
+				*device_ids = malloc(0);
+				fprintf(stderr,
+				        "Could not get number of devices: %s\n",
+				        piglit_cl_get_error_name(errNo));
+				return 0;
 			}
 		
 			/* get device list */
@@ -382,9 +394,12 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_id**
 				                       NULL);
 				if(errNo != CL_SUCCESS) {
 					free(platform_ids);
-					printf("Could not get get device list: %s\n",
-					       piglit_cl_get_error_name(errNo));
-					piglit_report_result(PIGLIT_FAIL);
+					free(device_ids);
+					*device_ids = malloc(0);
+					fprintf(stderr,
+					        "Could not get get device list: %s\n",
+					        piglit_cl_get_error_name(errNo));
+					return 0;
 				}
 			}
 
@@ -398,79 +413,90 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_id**
 
 	/* received invalid platform_id */
 	printf("Trying to get a device from invalid platform_id\n");
-	piglit_report_result(PIGLIT_FAIL);
 
-	/* UNREACHED */
+	*device_ids = malloc(0);
 	return 0;
 }
 
-struct piglit_cl_context
-piglit_cl_create_context(cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices)
+bool
+piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices)
 {
 	int i;
 	cl_int errNo;
-	struct piglit_cl_context context;
 	cl_context_properties cl_ctx_properties[] = {
 		CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id,
 		0
 	};
 
 	/* assign platform */
-	context.platform_id = platform_id;
+	context->platform_id = platform_id;
 
 	/* assign devices */
-	context.num_devices = num_devices;
-	context.device_ids = malloc(num_devices * sizeof(cl_device_id));
-	memcpy(context.device_ids, device_ids, num_devices * sizeof(cl_device_id));
+	context->num_devices = num_devices;
+	context->device_ids = malloc(num_devices * sizeof(cl_device_id));
+	memcpy(context->device_ids, device_ids, num_devices * sizeof(cl_device_id));
 
 	/* create and assign context */
-	context.cl_ctx = clCreateContext(cl_ctx_properties,
-	                                 context.num_devices,
-	                                 context.device_ids,
-	                                 NULL,
-	                                 NULL,
-	                                 &errNo);
+	context->cl_ctx = clCreateContext(cl_ctx_properties,
+	                                  context->num_devices,
+	                                  context->device_ids,
+	                                  NULL,
+	                                  NULL,
+	                                  &errNo);
 	if(errNo != CL_SUCCESS) {
-		printf("Could not create context: %s\n",
-		       piglit_cl_get_error_name(errNo));
-		piglit_report_result(PIGLIT_FAIL);
+		free(context->device_ids);
+		fprintf(stderr,
+		        "Could not create context: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
 	}
 
 	/* create and assing command queues */
-	context.command_queues = malloc(num_devices * sizeof(cl_command_queue));
+	context->command_queues = malloc(num_devices * sizeof(cl_command_queue));
 	for(i = 0; i < num_devices; i++) {
-		context.command_queues[i] = clCreateCommandQueue(context.cl_ctx,
-		                                                 context.device_ids[i],
-		                                                 0,
-		                                                 &errNo);
+		context->command_queues[i] = clCreateCommandQueue(context->cl_ctx,
+		                                                  context->device_ids[i],
+		                                                  0,
+		                                                  &errNo);
 		if(errNo != CL_SUCCESS) {
-			printf("Could not create command queue: %s\n",
-			       piglit_cl_get_error_name(errNo));
-			piglit_report_result(PIGLIT_FAIL);
+			clReleaseContext(context->cl_ctx);
+			free(context->device_ids);
+			free(context->command_queues);
+			fprintf(stderr,
+			        "Could not create command queue: %s\n",
+			        piglit_cl_get_error_name(errNo));
+			return false;
 		}
 	}
 
-	return context;
+	return true;
 }
 
-void piglit_cl_release_context(struct piglit_cl_context context)
+void piglit_cl_release_context(struct piglit_cl_context *context)
 {
 	int i;
 
+	/* remove platform */
+	context->platform_id = NULL;
+
 	/* release command queues */
-	for(i = 0; i < context.num_devices; i++) {
-		if(clReleaseCommandQueue(context.command_queues[i]) != CL_SUCCESS) {
+	for(i = 0; i < context->num_devices; i++) {
+		if(clReleaseCommandQueue(context->command_queues[i]) != CL_SUCCESS) {
 			printf("Command queue already released\n");
 		}
 	}
+	context->command_queues = NULL;
 
 	/* free devices array */
-	free(context.device_ids);
+	context->num_devices = 0;
+	free(context->device_ids);
+	context->device_ids = NULL;
 
 	/* release context */
-	if(clReleaseContext(context.cl_ctx) != CL_SUCCESS) {
+	if(clReleaseContext(context->cl_ctx) != CL_SUCCESS) {
 		printf("Context already released\n");
 	}
+	context->cl_ctx = NULL;
 }
 
 cl_program

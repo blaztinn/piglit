@@ -157,7 +157,7 @@ piglit_cl_test(const int argc,
 	/*** Normal usage ***/
 
 	/* get device ids */
-	num_devices = piglit_cl_get_device_ids(env->platform_id, &devices);
+	num_devices = piglit_cl_get_device_ids(env->platform_id, CL_DEVICE_TYPE_ALL, &devices);
 
 	/*
 	 * Create context.

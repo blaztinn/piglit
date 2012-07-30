@@ -154,7 +154,7 @@ piglit_cl_test(const int argc,
 		piglit_merge_result(&result, PIGLIT_FAIL);
 	}
 
-	num_devices = piglit_cl_get_device_ids(env->platform_id, &devices);
+	num_devices = piglit_cl_get_device_ids(env->platform_id, CL_DEVICE_TYPE_ALL, &devices);
 	for(i = 0; i < num_devices; i++) {
 		if(devices[i] != env->device_id) {
 			clCreateCommandQueue(cl_ctx, devices[i], 0, &errNo);

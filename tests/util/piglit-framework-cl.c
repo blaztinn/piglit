@@ -162,7 +162,7 @@ int piglit_cl_framework_run(int argc, char** argv)
 				cl_device_id* device_ids;
 
 				/* get devices list available on platform */
-				num_devices = piglit_cl_get_device_ids(platform_id, &device_ids);
+				num_devices = piglit_cl_get_device_ids(platform_id, CL_DEVICE_TYPE_ALL, &device_ids);
 
 				if(config->run_per_device) {
 					unsigned int j;
@@ -303,7 +303,7 @@ bool piglit_cl_get_device_arg(const int argc, const char** argv, cl_platform_id 
 		unsigned int num_devices;
 		cl_device_id* device_ids;
 
-		num_devices = piglit_cl_get_device_ids(platform_id, &device_ids);
+		num_devices = piglit_cl_get_device_ids(platform_id, CL_DEVICE_TYPE_ALL, &device_ids);
 
 		for(i = 0; i < num_devices; i++) {
 			char* device_name = piglit_cl_get_device_info(device_ids[i], CL_DEVICE_NAME);

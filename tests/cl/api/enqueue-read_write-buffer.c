@@ -374,20 +374,25 @@ piglit_cl_test(const int argc,
 	 *
 	 * TODO: events
 	 */
-	context = piglit_cl_create_context(env->platform_id,
-	                                   env->context.device_ids,
-	                                   1);
+	if(piglit_cl_create_context(&context,
+	                            env->platform_id,
+	                            env->context.device_ids,
+	                            1)) {
 	
-	test_write(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
-	           0, NULL, NULL,
-	           CL_INVALID_CONTEXT, &result,
-	           "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
-	test_read(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
-	          0, NULL, NULL,
-	          CL_INVALID_CONTEXT, &result,
-	          "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
+		test_write(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_write,
+		           0, NULL, NULL,
+		           CL_INVALID_CONTEXT, &result,
+		           "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
+		test_read(context.command_queues[0], mem, true, 0, BUFFER_SIZE, host_buffer_read,
+		          0, NULL, NULL,
+		          CL_INVALID_CONTEXT, &result,
+		          "Trigger CL_INVALID_CONTEXT when context associated with command_queue and buffer are not the same");
 
-	piglit_cl_release_context(context);
+		piglit_cl_release_context(&context);
+	} else {
+		fprintf(stderr, "Could not test triggering CL_INVALID_CONTEXT.\n");
+		piglit_merge_result(&result, PIGLIT_FAIL);
+	}
 
 	/*
 	 * CL_INVALID_MEM_OBJECT if buffer is not a valid buffer object.

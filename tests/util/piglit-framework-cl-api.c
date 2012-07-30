@@ -125,17 +125,23 @@ piglit_cl_api_test_run(const int argc,
 
 	/* Create context */
 	if(config->create_context) {
+		bool success;
+
 		if(config->run_per_platform) {
 			unsigned int num_devices;
 			cl_device_id* device_ids;
 
-			num_devices = piglit_cl_get_device_ids(platform_id, &device_ids);
+			num_devices = piglit_cl_get_device_ids(platform_id, CL_DEVICE_TYPE_ALL, &device_ids);
 
-			context = piglit_cl_create_context(platform_id, device_ids, num_devices);
+			success = piglit_cl_create_context(&context, platform_id, device_ids, num_devices);
 
 			free(device_ids);
 		} else { // config->run_per_device
-			context = piglit_cl_create_context(platform_id, &device_id, 1);
+			success = piglit_cl_create_context(&context, platform_id, &device_id, 1);
+		}
+
+		if(!success) {
+			return PIGLIT_FAIL;
 		}
 	}
 	
@@ -168,7 +174,7 @@ piglit_cl_api_test_run(const int argc,
 	
 	/* Release context */
 	if(config->create_context) {
-		piglit_cl_release_context(context);
+		piglit_cl_release_context(&context);
 	}
 
 	return result;

@@ -73,13 +73,13 @@ void piglit_cl_expect_error(cl_int error, cl_int expected_error, enum piglit_res
 
 /* Runtime dependent */
 
-/* Platform, device and context info */
+/* Info functions */
 
 /**
  * \brief Get version of OpenCL API for \c platform.
  *
  * Returned version is multiplied by 10 to make it an integer. For
- * example, if the CL version is 1.1, the returned ivalue is 11.
+ * example, if the CL version is 1.1, the returned value is 11.
  */
 int piglit_cl_get_platform_version(cl_platform_id platform);
 
@@ -228,6 +228,8 @@ void piglit_cl_require_device_extension(cl_device_id device, const char *name);
  */
 void piglit_cl_require_not_device_extension(cl_device_id device, const char *name);
 
+/* Helper functions */
+
 /**
  * \brief Get all available platforms.
  *
@@ -243,13 +245,12 @@ unsigned int piglit_cl_get_platform_ids(cl_platform_id** platform_ids);
  *
  * \warning Caller must free the allocated device array.
  *
- * @param platform_id  Platform from which to get platforms.
- * @param device_ids   Address to store a pointer to device ids list.
- * @return             Number of stored device ids.
+ * @param platform_id   Platform from which to get platforms.
+ * @param device_type   A bitfield to filter device types.
+ * @param device_ids    Address to store a pointer to device ids list.
+ * @return              Number of stored device ids.
  */
-unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_id** device_ids);
-
-/* Contexts */
+unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_type device_type, cl_device_id** device_ids);
 
 /**
  * \brief Helper context.
@@ -273,13 +274,14 @@ struct piglit_cl_context {
  * Create a helper context from platform id \c platform_id and
  * device ids \c device_ids.
  *
+ * @param context      Context struct to fill.
  * @param platform_id  Platform from which to create context.
  * @param device_ids   Device ids to add to context.
  * @param num_devices  Number of members in \c device_ids.
- * @return             New piglit_cl_context.
+ * @return             Return \c true on success.
  */
-struct piglit_cl_context
-piglit_cl_create_context(cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices);
+bool
+piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices);
 
 /**
  * \brief Release \c piglit_cl_context
@@ -287,21 +289,21 @@ piglit_cl_create_context(cl_platform_id platform_id, const cl_device_id device_i
  * Free memory used by \c context and release the generated context
  * and memory queues.
  *
- * @param context  Helper context to release.
+ * @param context  Context to release.
  */
 void
-piglit_cl_release_context(struct piglit_cl_context context);
+piglit_cl_release_context(struct piglit_cl_context* context);
 
 /**
- * \brief Create and build program
+ * \brief Create and build a program with source.
  *
- * Create and build program for all devices in \c piglit_cl_context.
+ * Create and build a program with source for all devices in \c piglit_cl_context.
  *
  * @param context      Context on which to create and build program.
  * @param count        Number of strings in \c strings.
  * @param string       Array of pointers to NULL-terminated source strings.
  * @param options      NULL-terminated string that describes build options.
- * @return             New piglit_cl_context.
+ * @return             Built program or NULL on fail.
  */
 cl_program
 piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options);
