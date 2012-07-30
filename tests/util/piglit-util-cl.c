@@ -97,6 +97,88 @@ void piglit_cl_require_platform_version(cl_platform_id platform, int required_ve
 	}
 }
 
+int piglit_cl_get_device_version(cl_device_id device)
+{
+	char* version_string;
+	const char *version_number_string;
+	int scanf_count;
+	int major;
+	int minor;
+	
+	/*
+	 * Returned format:
+	 *   OpenCL<space><major_version.minor_version><space><platform-specific information>
+	 */
+	version_string = piglit_cl_get_device_info(device, CL_DEVICE_VERSION);
+
+	/* skip to version number */
+	version_number_string = version_string + 6;
+
+	/* Interpret version number */
+	scanf_count = sscanf(version_number_string, "%i.%i", &major, &minor);
+	if (scanf_count != 2) {
+		printf("Unable to interpret CL_DEVICE_VERSION string: %s\n",
+		       version_string);
+		free(version_string);
+		piglit_report_result(PIGLIT_FAIL);
+		exit(1);
+	}
+	free(version_string);
+
+	return 10*major+minor;
+}
+
+void piglit_cl_require_device_version(cl_device_id device, int required_version_times_10)
+{
+	if (piglit_cl_get_device_version(device) < required_version_times_10) {
+		printf("Test requires OpenCL version %g\n",
+		       required_version_times_10 / 10.0);
+		piglit_report_result(PIGLIT_SKIP);
+		exit(1);
+	}
+}
+
+int piglit_cl_get_device_cl_c_version(cl_device_id device)
+{
+	char* version_string;
+	const char *version_number_string;
+	int scanf_count;
+	int major;
+	int minor;
+	
+	/*
+	 * Returned format:
+	 *   OpenCL<space>C<space><major_version.minor_version><space><vendor-specific information>
+	 */
+	version_string = piglit_cl_get_device_info(device, CL_DEVICE_OPENCL_C_VERSION);
+
+	/* skip to version number */
+	version_number_string = version_string + 8;
+
+	/* Interpret version number */
+	scanf_count = sscanf(version_number_string, "%i.%i", &major, &minor);
+	if (scanf_count != 2) {
+		printf("Unable to interpret CL_DEVICE_OPENCL_C_VERSION string: %s\n",
+		       version_string);
+		free(version_string);
+		piglit_report_result(PIGLIT_FAIL);
+		exit(1);
+	}
+	free(version_string);
+
+	return 10*major+minor;
+}
+
+void piglit_cl_require_device_cl_c_version(cl_device_id device, int required_version_times_10)
+{
+	if (piglit_cl_get_device_cl_c_version(device) < required_version_times_10) {
+		printf("Test requires OpenCL C version %g\n",
+		       required_version_times_10 / 10.0);
+		piglit_report_result(PIGLIT_SKIP);
+		exit(1);
+	}
+}
+
 struct _program_build_info_args {
 	cl_program program;
 	cl_device_id device;
@@ -500,7 +582,7 @@ void piglit_cl_release_context(struct piglit_cl_context *context)
 }
 
 cl_program
-piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options)
+piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, cl_uint count, char** strings, const char* options, bool fail)
 {
 	cl_int errNo;
 	cl_program program;
@@ -511,24 +593,28 @@ piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint co
 	                                    NULL,
 	                                    &errNo);
 	if(errNo != CL_SUCCESS) {
-		printf("Could not create program with source: %s\n",
-		       piglit_cl_get_error_name(errNo));
-		piglit_report_result(PIGLIT_FAIL);
+		fprintf(stderr,
+		        "Could not create program with source: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return NULL;
 	}
 	
 	errNo = clBuildProgram(program,
 	                       context.num_devices,
 	                       context.device_ids,
-	                       NULL,
+	                       options,
 	                       NULL,
 	                       NULL);
-	if(errNo != CL_SUCCESS) {
+	if(   (!fail && errNo != CL_SUCCESS)
+	   || ( fail && errNo == CL_SUCCESS)) {
 		int i;
-		
-		printf("Could not build program: %s\n",
-		       piglit_cl_get_error_name(errNo));
 
-		printf("Source:\n");
+		fprintf(stderr,
+		        !fail ? "Could not build program: %s\n"
+                      : "Program built when it should have failed: %s\n",
+		        piglit_cl_get_error_name(errNo));
+
+		printf("Build log for source:\n");
 		for(i = 0; i < count; i++) {
 			printf("%s\n", strings[i]);
 		}
@@ -537,16 +623,276 @@ piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint co
 			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
 			char* log = piglit_cl_get_program_build_info(program, context.device_ids[i], CL_PROGRAM_BUILD_LOG);
 			
-			printf("Build log for %s:\n ---- \n%s\n ---- \n",
+			printf("Build log for device %s:\n -------- \n%s\n -------- \n",
+			       device_name,
+			       log);
+
+			free(device_name);
+			free(log);
+		}
+
+		clReleaseProgram(program);
+		return NULL;
+	}
+
+	return program;
+}
+
+cl_program
+piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options)
+{
+	return piglit_cl_build_program_with_source_extended(context, count, strings, options, false);
+}
+
+cl_program
+piglit_cl_fail_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options)
+{
+	return piglit_cl_build_program_with_source_extended(context, count, strings, options, true);
+}
+
+cl_program
+piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options, bool fail)
+{
+	cl_int errNo;
+	cl_program program;
+
+	cl_int* binary_status = malloc(sizeof(cl_int) * context.num_devices);
+
+	program = clCreateProgramWithBinary(context.cl_ctx,
+	                                    context.num_devices,
+	                                    context.device_ids,
+	                                    lenghts,
+	                                    (const unsigned char**)binaries,
+	                                    binary_status,
+	                                    &errNo);
+	if(errNo != CL_SUCCESS) {
+		int i;
+
+		fprintf(stderr,
+		        "Could not create program with binary: %s\n",
+		        piglit_cl_get_error_name(errNo));
+
+		printf("Create error with binaries:\n");
+		for(i = 0; i < context.num_devices; i++) {
+			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
+			
+			printf("Error for %s: %s\n",
+			       device_name,
+			       piglit_cl_get_error_name(binary_status[i]));
+			
+			free(device_name);
+		}
+
+		free(binary_status);
+		return NULL;
+	}
+	free(binary_status);
+	
+	errNo = clBuildProgram(program,
+	                       context.num_devices,
+	                       context.device_ids,
+	                       options,
+	                       NULL,
+	                       NULL);
+	if(   (!fail && errNo != CL_SUCCESS)
+	   || ( fail && errNo == CL_SUCCESS)) {
+		int i;
+
+		fprintf(stderr,
+		        !fail ? "Could not build program: %s\n"
+                      : "Program built when it should have failed: %s\n",
+		        piglit_cl_get_error_name(errNo));
+
+		printf("Build log for binaries.\n");
+
+		for(i = 0; i < context.num_devices; i++) {
+			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
+			char* log = piglit_cl_get_program_build_info(program, context.device_ids[i], CL_PROGRAM_BUILD_LOG);
+			
+			printf("Build log for device %s:\n -------- \n%s\n -------- \n",
 			       device_name,
 			       log);
 			
 			free(device_name);
 			free(log);
 		}
-		
-		piglit_report_result(PIGLIT_FAIL);
+
+		clReleaseProgram(program);
+		return NULL;
 	}
 
 	return program;
+}
+
+cl_program
+piglit_cl_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
+{
+	return piglit_cl_build_program_with_binary_extended(context, lenghts, binaries, options, false);
+}
+
+cl_program
+piglit_cl_fail_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
+{
+	return piglit_cl_build_program_with_binary_extended(context, lenghts, binaries, options, true);
+}
+
+cl_mem
+piglit_cl_create_buffer(struct piglit_cl_context context, cl_mem_flags flags, size_t size)
+{
+	cl_int errNo;
+	cl_mem buffer;
+
+	buffer = clCreateBuffer(context.cl_ctx, flags, size, NULL, &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not create buffer: %s\n",
+		        piglit_cl_get_error_name(errNo));
+	}
+
+	return buffer;
+}
+
+bool
+piglit_cl_write_buffer(cl_command_queue command_queue, cl_mem buffer, size_t offset, size_t cb, const void *ptr)
+{
+	cl_int errNo;
+
+	errNo = clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE, offset, cb, ptr,
+	                             0, NULL, NULL);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not enqueue buffer write: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
+piglit_cl_write_whole_buffer(cl_command_queue command_queue, cl_mem buffer, const void *ptr)
+{
+	bool success;
+	size_t* buffer_size;
+
+	buffer_size = piglit_cl_get_mem_object_info(buffer, CL_MEM_SIZE);
+	success = piglit_cl_write_buffer(command_queue, buffer, 0, *buffer_size, ptr);
+	free(buffer_size);
+
+	return success;
+}
+
+bool
+piglit_cl_read_buffer(cl_command_queue command_queue, cl_mem buffer, size_t offset, size_t cb, void *ptr)
+{
+	cl_int errNo;
+
+	errNo = clEnqueueReadBuffer(command_queue, buffer, CL_TRUE, offset, cb, ptr,
+	                            0, NULL, NULL);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not enqueue buffer read: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
+piglit_cl_read_whole_buffer(cl_command_queue command_queue, cl_mem buffer, void *ptr)
+{
+	bool success;
+	size_t* buffer_size;
+
+	buffer_size = piglit_cl_get_mem_object_info(buffer, CL_MEM_SIZE);
+	success = piglit_cl_read_buffer(command_queue, buffer, 0, *buffer_size, ptr);
+	free(buffer_size);
+
+	return success;
+}
+
+cl_kernel
+piglit_cl_create_kernel(cl_program program, const char* kernel_name)
+{
+	cl_int errNo;
+	cl_kernel kernel;
+
+	kernel = clCreateKernel(program, kernel_name, &errNo);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not create kernel %s: %s\n",
+		        kernel_name,
+		        piglit_cl_get_error_name(errNo));
+	}
+
+	return kernel;
+}
+
+bool
+piglit_cl_set_kernel_arg(cl_kernel kernel, cl_uint arg_index, size_t size, const void* arg_value)
+{
+	cl_int errNo;
+
+	errNo = clSetKernelArg(kernel, arg_index, size, arg_value);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not set kernel arg %u: %s\n",
+		        arg_index,
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
+piglit_cl_set_kernel_buffer_arg(cl_kernel kernel, cl_uint arg_index, cl_mem *buffer)
+{
+	bool success;
+
+	success = piglit_cl_set_kernel_arg(kernel, arg_index, sizeof(cl_mem), buffer);
+	if(!success) {
+		fprintf(stderr,
+		        "Could not set kernel buffer arg %u\n",
+		        arg_index);
+		return false;
+	}
+
+	return success;
+}
+
+bool
+piglit_cl_enqueue_ND_range_kernel(cl_command_queue command_queue, cl_kernel kernel, cl_uint work_dim, const size_t* global_work_size, const size_t* local_work_size)
+{
+	cl_int errNo;
+
+	errNo = clEnqueueNDRangeKernel(command_queue, kernel, work_dim,
+	                               NULL, global_work_size, local_work_size,
+	                               0, NULL, NULL);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not enqueue ND range kernel: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
+piglit_cl_enqueue_task(cl_command_queue command_queue, cl_kernel kernel)
+{
+	cl_int errNo;
+
+	errNo = clEnqueueTask(command_queue, kernel,
+	                      0, NULL, NULL);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not enqueue task: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
 }

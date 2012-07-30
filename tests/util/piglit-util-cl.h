@@ -93,6 +93,40 @@ int piglit_cl_get_platform_version(cl_platform_id platform);
 void piglit_cl_require_platform_version(cl_platform_id platform, int required_version_times_10);
 
 /**
+ * \brief Get version of OpenCL API for \c device.
+ *
+ * Returned version is multiplied by 10 to make it an integer. For
+ * example, if the CL version is 1.1, the returned value is 11.
+ */
+int piglit_cl_get_device_version(cl_device_id platform);
+
+/**
+ * \brief Check for required OpenCL version and possibly terminate the test.
+ *
+ * \c required_version_times_10 must be an OpenCL version multiplied by 10.
+ * For example, if the required CL version is 1.1, then the
+ * \c required_version_times_10 should be 11.
+ */
+void piglit_cl_require_device_version(cl_device_id device, int required_version_times_10);
+
+/**
+ * \brief Get version of OpenCL C for \c device.
+ *
+ * Returned version is multiplied by 10 to make it an integer. For
+ * example, if the CL C version is 1.1, the returned value is 11.
+ */
+int piglit_cl_get_device_cl_c_version(cl_device_id device);
+
+/**
+ * \brief Check for required OpenCL C version and possibly terminate the test.
+ *
+ * \c required_version_times_10 must be an OpenCL C version multiplied by 10.
+ * For example, if the required CL C version is 1.1, then the
+ * \c required_version_times_10 should be 11.
+ */
+void piglit_cl_require_device_cl_c_version(cl_device_id device, int required_version_times_10);
+
+/**
  * \brief Get platform information.
  *
  * \warning Returned data must be freed by the caller.
@@ -308,6 +342,171 @@ piglit_cl_release_context(struct piglit_cl_context* context);
 cl_program
 piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options);
 
+/**
+ * \brief Create and try to build a program with invalid source.
+ *
+ * Create and try to build a program with invalid source for all devices
+ * in \c piglit_cl_context.
+ *
+ * @param context      Context on which to create and build program.
+ * @param count        Number of strings in \c strings.
+ * @param string       Array of pointers to NULL-terminated source strings.
+ * @param options      NULL-terminated string that describes build options.
+ * @return             Unsuccessfully built program or NULL on fail.
+ */
+cl_program
+piglit_cl_fail_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options);
+
+/**
+ * \brief Create and build a program with binary.
+ *
+ * Create and build aprogram with binary for all devices in
+ * \c piglit_cl_context.
+ *
+ * @param context      Context on which to create and build program.
+ * @param lenghts      Lenghts of binaries in \c binaries.
+ * @param binaries     Array of pointers to binaries.
+ * @param options      NULL-terminated string that describes build options.
+ * @return             Built program or NULL on fail.
+ */
+cl_program
+piglit_cl_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
+
+/**
+ * \brief Create and try to build a program with invalid binary.
+ *
+ * Create and try to build a program with invalid binary for all devices
+ * in \c piglit_cl_context.
+ *
+ * @param context      Context on which to create and build program.
+ * @param lenghts      Lenghts of binaries in \c binaries.
+ * @param binaries     Array of pointers to binaries.
+ * @param options      NULL-terminated string that describes build options.
+ * @return             Unsuccessfully built program or NULL on fail.
+ */
+cl_program
+piglit_cl_fail_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
+
+/**
+ * \brief Create a buffer.
+ *
+ * @param context      Context on which to create buffer.
+ * @param flags        Memory flags.
+ * @param size         Size of created buffer.
+ * @return             Created buffer or NULL on fail.
+ */
+cl_mem
+piglit_cl_create_buffer(struct piglit_cl_context context, cl_mem_flags flags, size_t size);
+
+/**
+ * \brief Blocking write to a buffer.
+ *
+ * @param command_queue  Command queue to enqueue operation on.
+ * @param buffer         Memory buffer to write to.
+ * @param offset         Offset in buffer.
+ * @param cb             Size of data in bytes.
+ * @param ptr            Pointer to data to be written to buffer.
+ * @return               \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_write_buffer(cl_command_queue command_queue, cl_mem buffer, size_t offset, size_t cb, const void *ptr);
+
+/**
+ * \brief Blocking write to a whole buffer.
+ *
+ * \warning \c ptr must point to memory space which is equal or larger
+ * in size than \c buffer.
+ *
+ * @param command_queue  Command queue to enqueue operation on.
+ * @param buffer         Memory buffer to write to.
+ * @param ptr            Pointer to data to be written to buffer.
+ * @return               \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_write_whole_buffer(cl_command_queue command_queue, cl_mem buffer, const void *ptr);
+
+/**
+ * \brief Blocking read from a buffer.
+ *
+ * @param command_queue  Command queue to enqueue operation on.
+ * @param buffer         Memory buffer to read from.
+ * @param offset         Offset in buffer.
+ * @param cb             Size of data in bytes.
+ * @param ptr            Pointer to data to be written from buffer.
+ * @return               \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_read_buffer(cl_command_queue command_queue, cl_mem buffer, size_t offset, size_t cb, void *ptr);
+
+/**
+ * \brief Blocking read from a whole buffer.
+ *
+ * \warning \c ptr must point to memory space which is equal or larger
+ * in size than \c buffer.
+ *
+ * @param command_queue  Command queue to enqueue operation on.
+ * @param buffer         Memory buffer to read from.
+ * @param ptr            Pointer to data to be written from buffer.
+ * @return               \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_read_whole_buffer(cl_command_queue command_queue, cl_mem buffer, void *ptr);
+
+/**
+ * \brief Create a kernel.
+ *
+ * @param context      Program on which to create a kernel.
+ * @param kernel_name  Kernel name.
+ * @return             Created kernel or NULL on fail.
+ */
+cl_kernel
+piglit_cl_create_kernel(cl_program program, const char* kernel_name);
+
+/**
+ * \brief Set kernel argument.
+ *
+ * @param kernel       Kernel for which to set an argument.
+ * @param arg_index    Argument index.
+ * @param size         Size of argument.
+ * @param arg_value    Pointer to argument value.
+ * @return             \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_set_kernel_arg(cl_kernel kernel, cl_uint arg_index, size_t size, const void* arg_value);
+
+/**
+ * \brief Set kernel buffer argument.
+ *
+ * @param kernel       Kernel for which to set an buffer argument.
+ * @param arg_index    Argument index.
+ * @param buffer       Buffer to be set as argument.
+ * @return             \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_set_kernel_buffer_arg(cl_kernel kernel, cl_uint arg_index, cl_mem *buffer);
+
+/**
+ * \brief Enqueue ND-range kernel.
+ *
+ * @param command_queue     Command queue to enqueue operation on.
+ * @param kernel            Kernel to be enqueued.
+ * @param work_dim          Work dimensions.
+ * @param global_work_size  Global work sizes.
+ * @param local_work_size   Local work sizes.
+ * @return                  \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_enqueue_ND_range_kernel(cl_command_queue command_queue, cl_kernel kernel, cl_uint work_dim, const size_t* global_work_size, const size_t* local_work_size);
+
+/**
+ * \brief Enqueue kernel task.
+ *
+ * @param command_queue     Command queue to enqueue operation on.
+ * @param kernel            Kernel to be enqueued.
+ * @return                  \c true on succes, \c false otherwise.
+ */
+bool
+piglit_cl_enqueue_task(cl_command_queue command_queue, cl_kernel kernel);
 
 #ifdef __cplusplus
 } /* end extern "C" */
