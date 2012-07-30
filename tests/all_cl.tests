@@ -8,25 +8,15 @@ from framework.core import *
 from framework.exectest import *
 
 ######
-# Get environment options
-additional_args = []
-if 'PIGLIT_CL_PLATFORM' in os.environ:
-	additional_args += ['-platform', os.environ['PIGLIT_CL_PLATFORM']];
-if 'PIGLIT_CL_DEVICE' in os.environ:
-	additional_args += ['-device', os.environ['PIGLIT_CL_DEVICE']];
-if 'PIGLIT_CL_VERSION' in os.environ:
-	additional_args += ['-version', os.environ['PIGLIT_CL_VERSION']];
-
-######
 # Helper functions
 
 def add_plain_test(group, name, args):
-	group[name] = PlainExecTest(args + additional_args)
+	group[name] = PlainExecTest(args)
 
 def add_concurrent_test(group, name, args):
 	test = PlainExecTest(args)
 	test.runConcurrent = true;
-	group[name] = PlainExecTest(args + additional_args)
+	group[name] = PlainExecTest(args)
 
 ######
 # Collecting all tests
