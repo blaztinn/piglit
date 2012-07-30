@@ -80,12 +80,17 @@ piglit_cl_api_test_run(const int argc,
 		       config->version_max);
 		return PIGLIT_SKIP;
 	}
+	if(config->version_max > 0 && config->version_max < config->version_min) {
+		printf("Invalid configuration, version_max (%d) is lower than version_min (%d).\n",
+		       config->version_max, config->version_min);
+		return PIGLIT_SKIP;
+	}
 	// create_context
 	if(config->create_context && !(config->run_per_device || config->run_per_platform)) {
 		printf("Invalid configuration, create_context can only be used with run_per_platform or run_per_device.\n");
 		return PIGLIT_SKIP;
 	}
-	// program
+	// program_source
 	if(config->program_source != NULL && !(config->run_per_device || config->run_per_platform)) {
 		printf("Invalid configuration, program_source can only be used with run_per_platform or run_per_device.\n");
 		return PIGLIT_SKIP;
@@ -114,7 +119,7 @@ piglit_cl_api_test_run(const int argc,
 		if(piglit_cl_get_version_arg(argc, argv) == 0) {
 			printf("Lowering version to %d.%d because of version_max.\n",
 			       config->version_max/10, config->version_max%10);
-			version = config->version_max > config->version_max;
+			version = config->version_max;
 		} else {
 			printf("Trying to run test with version (%d.%d) higher than version_max: %d\n",
 			       version/10, version%10,
@@ -151,6 +156,10 @@ piglit_cl_api_test_run(const int argc,
 			program = piglit_cl_build_program_with_source(context, 1, &config->program_source, config->build_options);
 		} else {
 			program = piglit_cl_build_program_with_source(context, 1, &config->program_source, "");
+		}
+
+		if(program == NULL) {
+			return PIGLIT_FAIL;
 		}
 	}
 
