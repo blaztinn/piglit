@@ -1,7 +1,6 @@
 include_directories(
 	${OPENCL_INCLUDE_PATH}
 	${piglit_SOURCE_DIR}/tests/util
-	${piglit_SOURCE_DIR}/tests/cl/util
 )
 
 link_libraries (
@@ -9,14 +8,18 @@ link_libraries (
 	${OPENCL_opencl_LIBRARY}
 )
 
-function(piglit_cl_add_test name source)
+function(piglit_cl_add_test)
+    add_executable(${ARGV})
+endfunction(piglit_cl_add_test)
+
+function(piglit_cl_add_api_test name)
 
     list(REMOVE_AT ARGV 0)
-    add_executable(
+    piglit_cl_add_test(
         cl-api-${name}
         ${ARGV}
     )
 
-endfunction(piglit_cl_add_test)
+endfunction(piglit_cl_add_api_test)
 
 add_subdirectory (api)
