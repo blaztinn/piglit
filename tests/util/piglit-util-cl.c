@@ -225,8 +225,9 @@ static void* piglit_cl_get_info(void* fn_ptr, void* obj, cl_uint param) {
 	} else if(fn_ptr == clGetEventProfilingInfo) {
 		errNo = clGetEventProfilingInfo(*(cl_event*)obj, param, 0, NULL, &param_size);
 	} else {
-		printf("Trying to get %s information from undefined function.\n",
-		       piglit_cl_get_enum_name(param));
+		fprintf(stderr,
+		        "Trying to get %s information from undefined function.\n",
+		        piglit_cl_get_enum_name(param));
 		piglit_report_result(PIGLIT_FAIL);
 		exit(1);
 	}
@@ -274,9 +275,10 @@ static void* piglit_cl_get_info(void* fn_ptr, void* obj, cl_uint param) {
 	}
 
 	if(param_ptr == NULL) {
-		printf("Unable to get %s information (Error: %s)\n",
-		       piglit_cl_get_enum_name(param),
-		       piglit_cl_get_error_name(errNo));
+		fprintf(stderr,
+		        "Unable to get %s information (Error: %s)\n",
+		        piglit_cl_get_enum_name(param),
+		        piglit_cl_get_error_name(errNo));
 		piglit_report_result(PIGLIT_FAIL);
 		exit(1);
 	}
@@ -494,7 +496,7 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_type
 	free(platform_ids);
 
 	/* received invalid platform_id */
-	printf("Trying to get a device from invalid platform_id\n");
+	fprintf(stderr, "Trying to get a device from invalid platform_id\n");
 
 	*device_ids = malloc(0);
 	return 0;
@@ -611,7 +613,7 @@ piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, c
 
 		fprintf(stderr,
 		        !fail ? "Could not build program: %s\n"
-                      : "Program built when it should have failed: %s\n",
+		              : "Program built when it should have failed: %s\n",
 		        piglit_cl_get_error_name(errNo));
 
 		printf("Build log for source:\n");
@@ -700,7 +702,7 @@ piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, s
 
 		fprintf(stderr,
 		        !fail ? "Could not build program: %s\n"
-                      : "Program built when it should have failed: %s\n",
+		              : "Program built when it should have failed: %s\n",
 		        piglit_cl_get_error_name(errNo));
 
 		printf("Build log for binaries.\n");
@@ -837,7 +839,7 @@ piglit_cl_set_kernel_arg(cl_kernel kernel, cl_uint arg_index, size_t size, const
 	errNo = clSetKernelArg(kernel, arg_index, size, arg_value);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
 		fprintf(stderr,
-		        "Could not set kernel arg %u: %s\n",
+		        "Could not set kernel argument %u: %s\n",
 		        arg_index,
 		        piglit_cl_get_error_name(errNo));
 		return false;
@@ -854,7 +856,7 @@ piglit_cl_set_kernel_buffer_arg(cl_kernel kernel, cl_uint arg_index, cl_mem *buf
 	success = piglit_cl_set_kernel_arg(kernel, arg_index, sizeof(cl_mem), buffer);
 	if(!success) {
 		fprintf(stderr,
-		        "Could not set kernel buffer arg %u\n",
+		        "Could not set kernel buffer argument %u\n",
 		        arg_index);
 		return false;
 	}

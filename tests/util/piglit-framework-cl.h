@@ -73,7 +73,7 @@ typedef enum piglit_result piglit_cl_test_run_t(const int argc,
  */
 typedef void piglit_cl_test_init_t(const int argc,
                                    const char** argv,
-                                   struct piglit_cl_test_config_header* config);
+                                   void* config);
 /**
  * \brief Clean environment.
  *
@@ -88,7 +88,7 @@ typedef void piglit_cl_test_init_t(const int argc,
  */
 typedef void piglit_cl_test_clean_t(const int argc,
                                     const char** argv,
-                                    struct piglit_cl_test_config_header* config);
+                                    void* config);
 
 
 #define PIGLIT_CL_TEST_CONFIG_HEADER                                         \

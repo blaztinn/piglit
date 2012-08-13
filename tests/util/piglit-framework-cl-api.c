@@ -44,7 +44,62 @@ piglit_cl_get_empty_api_test_config()
 	return &PIGLIT_CL_DEFAULT_API_TEST_CONFIG;
 }
 
-/* Run by piglit_cl_framework_run() */
+/* Check configuration */
+void piglit_cl_api_test_init(const int argc,
+                             const char** argv,
+                             void* void_config)
+{
+	struct piglit_cl_api_test_config* config = void_config;
+
+	/* Run test's init */
+	if(config->_init_test != NULL) {
+		config->_init_test(argc, argv, void_config);
+	}
+
+	// version_min
+	if(config->version_min <= 0) {
+		fprintf(stderr, "Invalid configuration, version_min is %d.\n",
+		        config->version_min);
+		piglit_report_result(PIGLIT_WARN);
+	}
+	if(config->version_min > PIGLIT_CL_VERSION) {
+		fprintf(stderr, "Piglit was compiled with lower OpenCL version (%d.%d) than version_min: %d.\n",
+		        PIGLIT_CL_VERSION/10, PIGLIT_CL_VERSION%10,
+		        config->version_min);
+		piglit_report_result(PIGLIT_WARN);
+	}
+	// version_max
+	if(config->version_max < 0) {
+		fprintf(stderr, "Invalid configuration, version_max is %d.\n",
+		        config->version_max);
+		piglit_report_result(PIGLIT_WARN);
+	}
+	if(config->version_max > 0 && config->version_max < config->version_min) {
+		fprintf(stderr, "Invalid configuration, version_max (%d) is lower than version_min (%d).\n",
+		        config->version_max, config->version_min);
+		piglit_report_result(PIGLIT_WARN);
+	}
+	// create_context
+	if(config->create_context && !(config->run_per_device || config->run_per_platform)) {
+		printf("Invalid configuration, create_context can only be used with run_per_platform or run_per_device.\n");
+		piglit_report_result(PIGLIT_WARN);
+	}
+	// program_source
+	if(config->program_source != NULL && !(config->run_per_device || config->run_per_platform)) {
+		printf("Invalid configuration, program_source can only be used with run_per_platform or run_per_device.\n");
+		piglit_report_result(PIGLIT_WARN);
+	}
+	if(config->program_source != NULL && !config->create_context) {
+		config->create_context = true;
+	}
+	// build options
+	if(config->build_options != NULL && config->program_source == NULL) {
+		fprintf(stderr, "Invalid configuration, build_options can only be used with program_source.\n");
+		piglit_report_result(PIGLIT_WARN);
+	}
+}
+
+/* Set environment and run test */
 enum piglit_result
 piglit_cl_api_test_run(const int argc,
                        const char** argv,
@@ -61,49 +116,6 @@ piglit_cl_api_test_run(const int argc,
 	struct piglit_cl_context context;
 	cl_program program = NULL;
 
-	/* Check that config is valid */
-	// version_min
-	if(config->version_min <= 0) {
-		printf("Invalid configuration, version_min is %d.\n",
-		       config->version_min);
-		return PIGLIT_SKIP;
-	}
-	if(config->version_min > PIGLIT_CL_VERSION) {
-		printf("Piglit was compiled with lower OpenCL version (%d.%d) than version_min: %d.\n",
-		       PIGLIT_CL_VERSION/10, PIGLIT_CL_VERSION%10,
-		       config->version_min);
-		return PIGLIT_SKIP;
-	}
-	// version_max
-	if(config->version_max < 0) {
-		printf("Invalid configuration, version_max is %d.\n",
-		       config->version_max);
-		return PIGLIT_SKIP;
-	}
-	if(config->version_max > 0 && config->version_max < config->version_min) {
-		printf("Invalid configuration, version_max (%d) is lower than version_min (%d).\n",
-		       config->version_max, config->version_min);
-		return PIGLIT_SKIP;
-	}
-	// create_context
-	if(config->create_context && !(config->run_per_device || config->run_per_platform)) {
-		printf("Invalid configuration, create_context can only be used with run_per_platform or run_per_device.\n");
-		return PIGLIT_SKIP;
-	}
-	// program_source
-	if(config->program_source != NULL && !(config->run_per_device || config->run_per_platform)) {
-		printf("Invalid configuration, program_source can only be used with run_per_platform or run_per_device.\n");
-		return PIGLIT_SKIP;
-	}
-	if(config->program_source != NULL && !config->create_context) {
-		config->create_context = true;
-	}
-	// build options
-	if(config->build_options != NULL && config->program_source == NULL) {
-		printf("Invalid configuration, build_options can only be used with program_source.\n");
-		return PIGLIT_SKIP;
-	}
-
 	/* Check version to test against */
 	if(version < config->version_min) {
 		printf("Trying to run test with version (%d.%d) lower than version_min: %d\n",
@@ -117,7 +129,7 @@ piglit_cl_api_test_run(const int argc,
 		 * lower it to version_max.
 		 */
 		if(piglit_cl_get_version_arg(argc, argv) == 0) {
-			printf("Lowering version to %d.%d because of version_max.\n",
+			printf("#   Lowering version to %d.%d because of version_max.\n",
 			       config->version_max/10, config->version_max%10);
 			version = config->version_max;
 		} else {

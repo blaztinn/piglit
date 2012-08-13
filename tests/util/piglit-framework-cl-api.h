@@ -56,6 +56,7 @@ typedef enum piglit_result
 PIGLIT_CL_DEFINE_TEST_CONFIG_BEGIN(struct piglit_cl_api_test_config)
 
 	piglit_cl_api_test_t* _api_test; /**< API test function. (internal) */
+	piglit_cl_test_init_t* _init_test; /**< API test init function. (internal) */
 
 	int version_min; /**< Minimum version required. (REQUIRED) */
 	int version_max; /**< Maximum version supported. (optional) */
@@ -72,6 +73,7 @@ PIGLIT_CL_DEFINE_TEST_CONFIG_BEGIN(struct piglit_cl_api_test_config)
 PIGLIT_CL_DEFINE_TEST_CONFIG_END
 
 piglit_cl_get_empty_test_config_t piglit_cl_get_empty_api_test_config;
+piglit_cl_test_init_t piglit_cl_api_test_init;
 piglit_cl_test_run_t piglit_cl_api_test_run;
 
 /**
@@ -106,6 +108,8 @@ piglit_cl_test_run_t piglit_cl_api_test_run;
 
 #define PIGLIT_CL_API_TEST_CONFIG_END                                    \
         config._api_test = piglit_cl_test;                               \
+        config._init_test = config.init_func;                            \
+        config.init_func = piglit_cl_api_test_init;                      \
                                                                          \
         PIGLIT_CL_TEST_CONFIG_END
 
