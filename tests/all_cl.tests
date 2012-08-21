@@ -18,11 +18,17 @@ def add_concurrent_test(group, name, args):
 	test.runConcurrent = true;
 	group[name] = PlainExecTest(args)
 
+def add_plain_program_tester_test(group, name, filename):
+	add_plain_test(group, name, ['cl-program-tester', 'tests/cl/program/'+filename])
+
 ######
 # Collecting all tests
 profile = TestProfile()
 
 api = Group()
+program = Group()
+profile.tests['API'] = api
+profile.tests['Program'] = program
 
 ######
 # Tests
@@ -68,4 +74,3 @@ add_plain_test(api, 'clSetKernelArg', ['cl-api-set-kernel-arg'])
 add_plain_test(api, 'clGetEventInfo', ['cl-api-get-event-info'])
 add_plain_test(api, 'clRetainEvent and clReleaseEvent', ['cl-api-retain_release-event'])
 
-profile.tests['API'] = api
