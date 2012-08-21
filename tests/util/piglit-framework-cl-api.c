@@ -23,9 +23,6 @@
 
 #include "piglit-framework-cl-api.h"
 
-/* Function to run on each test */
-//extern piglit_cl_test_t piglit_cl_test;
-
 /* Default test configuration values */
 const struct piglit_cl_api_test_config PIGLIT_CL_DEFAULT_API_TEST_CONFIG = {
 	.version_min = 0,
@@ -57,6 +54,9 @@ void piglit_cl_api_test_init(const int argc,
 	}
 
 	// version_min
+	if(config->version_min == 0) {
+		config->version_min = 10;
+	}
 	if(config->version_min <= 0) {
 		fprintf(stderr, "Invalid configuration, version_min is %d.\n",
 		        config->version_min);

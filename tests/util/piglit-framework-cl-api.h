@@ -58,7 +58,7 @@ PIGLIT_CL_DEFINE_TEST_CONFIG_BEGIN(struct piglit_cl_api_test_config)
 	piglit_cl_api_test_t* _api_test; /**< API test function. (internal) */
 	piglit_cl_test_init_t* _init_test; /**< API test init function. (internal) */
 
-	int version_min; /**< Minimum version required. (REQUIRED) */
+	int version_min; /**< Minimum version required. (optional) */
 	int version_max; /**< Maximum version supported. (optional) */
 
 	bool create_context; /**<  Create helper context on each run. Depends on
