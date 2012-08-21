@@ -22,4 +22,15 @@ function(piglit_cl_add_api_test name)
 
 endfunction(piglit_cl_add_api_test)
 
+function(piglit_cl_add_program_test name)
+
+    list(REMOVE_AT ARGV 0)
+    piglit_cl_add_test(
+        cl-program-${name}
+        ${ARGV}
+    )
+
+endfunction(piglit_cl_add_program_test)
+
 add_subdirectory (api)
+add_subdirectory (program)
