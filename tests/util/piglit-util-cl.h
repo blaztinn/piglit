@@ -50,6 +50,24 @@ extern "C" {
 /* Runtime independent */
 
 /**
+ * \brief Probe integer \c value if it compares equal to \c expect with
+ *        tolerance \c tolerance.
+ */
+bool piglit_cl_probe_integer(int64_t value, int64_t expect, uint64_t tolerance);
+
+/**
+ * \brief Probe unsigned integer \c value if it compares equal to \c expect with
+ *        tolerance \c tolerance.
+ */
+bool piglit_cl_probe_uinteger(uint64_t value, uint64_t expect, uint64_t tolerance);
+
+/**
+ * \brief Probe floating-point \c value if it compares equal to \c expect with
+ *        tolerance \c tolerance.
+ */
+bool piglit_cl_probe_floating(double value, double expect, double tolerance);
+
+/**
  * \brief Check for unexpected GL error and report it.
  *
  * If \c error is other than \c expected_error, then print a diagnostic.

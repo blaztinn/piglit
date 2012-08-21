@@ -21,8 +21,56 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <inttypes.h>
+
 #include "piglit-util-cl.h"
 
+bool piglit_cl_probe_integer(int64_t value, int64_t expect, uint64_t tolerance)
+{
+	int64_t diff = value > expect ? value-expect : expect-value;
+
+	if(diff > tolerance) {
+		printf("Expecting %"PRId64" (0x%"PRIx64") with tolerance %"PRIu64", but got %"PRId64" (0x%"PRIx64")\n",
+		       expect, (uint64_t)expect, tolerance, value, (uint64_t)value);
+		return false;
+	}
+
+	return true;
+}
+
+bool piglit_cl_probe_uinteger(uint64_t value, uint64_t expect, uint64_t tolerance)
+{
+	uint64_t diff = value > expect ? value-expect : expect-value;
+
+	if(diff > tolerance) {
+		printf("Expecting %"PRIu64" (0x%"PRIx64") with tolerance %"PRIu64", but got %"PRIu64" (0x%"PRIx64")\n",
+		       expect, expect, tolerance, value, value);
+		return false;
+	}
+
+	return true;
+}
+
+bool piglit_cl_probe_floating(double value, double expect, double tolerance)
+{
+	double diff;
+
+	/* Treat infinity and nan seperately */
+	if(   (isnan(value) && isnan(expect))
+	   || (isinf(value) && isinf(expect) && ((value > 0) == (expect > 0)))) {
+		return true;
+	}
+
+	diff = value > expect ? value-expect : expect-value;
+
+	if(diff > tolerance || isnan(value)) {
+		printf("Expecting %f (0x%"PRIx64") with tolerance %f, but got %f (0x%"PRIx64")\n",
+		       expect, (uint64_t)expect, tolerance, value, (uint64_t)value);
+		return false;
+	}
+
+	return true;
+}
 
 bool piglit_cl_check_error(cl_int error, cl_int expected_error)
 {
