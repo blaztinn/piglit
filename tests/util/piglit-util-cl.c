@@ -621,10 +621,10 @@ piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, c
 		              : "Program built when it should have failed: %s\n",
 		        piglit_cl_get_error_name(errNo));
 
-		printf("Build log for source:\n");
+		/*printf("Build log for source:\n");
 		for(i = 0; i < count; i++) {
 			printf("%s\n", strings[i]);
-		}
+		}*/
 
 		for(i = 0; i < context.num_devices; i++) {
 			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
