@@ -104,7 +104,7 @@ int piglit_cl_get_device_version(cl_device_id device)
 	int scanf_count;
 	int major;
 	int minor;
-	
+
 	/*
 	 * Returned format:
 	 *   OpenCL<space><major_version.minor_version><space><platform-specific information>
@@ -145,7 +145,12 @@ int piglit_cl_get_device_cl_c_version(cl_device_id device)
 	int scanf_count;
 	int major;
 	int minor;
-	
+
+	/* OpenCL 1.0 does not have enum CL_DEVICE_OPENCL_C_VERSION */
+	if(piglit_cl_get_device_version(device) == 10) {
+		return 10;
+	}
+
 	/*
 	 * Returned format:
 	 *   OpenCL<space>C<space><major_version.minor_version><space><vendor-specific information>
