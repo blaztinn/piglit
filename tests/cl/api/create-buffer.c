@@ -267,8 +267,8 @@ piglit_cl_test(const int argc,
 		        "Trigger CL_INVALID_VALUE if values specified in flags are not valid (using 0x%X as memory flags)",
 		        (unsigned int)mutexes[i]);
 
-		if(   (mixed_mem_flags & CL_MEM_USE_HOST_PTR)
-		   || (mixed_mem_flags & CL_MEM_COPY_HOST_PTR)) {
+		if(   (mutexes[i] & CL_MEM_USE_HOST_PTR)
+		   || (mutexes[i] & CL_MEM_COPY_HOST_PTR)) {
 			test(env->context.cl_ctx, mutexes[i], alloc_size, host_buffer,
 			     CL_INVALID_VALUE, &result, test_str);
 		} else {
