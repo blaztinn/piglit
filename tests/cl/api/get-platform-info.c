@@ -60,8 +60,28 @@ piglit_cl_test(const int argc,
 	size_t param_value_size;
 	void* param_value;
 
+	bool found_invalid_platform = false;
+	cl_platform_id* platform_ids;
+	unsigned int num_platform_ids;
+	cl_platform_id invalid_platform_id;
+
 	int num_platform_infos = PIGLIT_CL_ENUM_NUM(cl_platform_info, env->version);
 	const cl_platform_info *platform_infos = PIGLIT_CL_ENUM_ARRAY(cl_platform_info);
+
+	/* Find invalid platform_id */
+	invalid_platform_id = 0;
+	num_platform_ids = piglit_cl_get_platform_ids(&platform_ids);
+	while(!found_invalid_platform) {
+		found_invalid_platform = true;
+		invalid_platform_id = (cl_platform_id)1;
+		for(i = 0; i < num_platform_ids; i++) {
+			if(invalid_platform_id == platform_ids[i]) {
+				found_invalid_platform = false;
+				break;
+			}
+		}
+	}
+	free(platform_ids);
 
 	/*** Normal usage ***/
 
@@ -135,7 +155,7 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_PLATFORM if platform is not a valid platform.
 	 */
-	errNo = clGetPlatformInfo(NULL,
+	errNo = clGetPlatformInfo(invalid_platform_id,
 	                          CL_PLATFORM_PROFILE,
 	                          0,
 	                          NULL,
