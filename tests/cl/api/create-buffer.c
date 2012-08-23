@@ -262,18 +262,23 @@ piglit_cl_test(const int argc,
 	/*
 	 * CL_INVALID_VALUE if values specified in flags are not valid.
 	 */
-	for(i = 0; i < num_mutexes; i++) {
-		sprintf(test_str,
-		        "Trigger CL_INVALID_VALUE if values specified in flags are not valid (using 0x%X as memory flags)",
-		        (unsigned int)mutexes[i]);
+	for(mask = 1; mask < (1 << num_mem_flags); mask++) {
+		mixed_mem_flags = get_mixed_mem_flags(mask, mem_flags);
+		
+		/* only invalid mixes */
+		if(!mem_flags_valid(mixed_mem_flags, num_mutexes, mutexes)) {
+			sprintf(test_str,
+			        "Trigger CL_INVALID_VALUE if values specified in flags are not valid (using 0x%X as memory flags)",
+			        (unsigned int)mixed_mem_flags);
 
-		if(   (mutexes[i] & CL_MEM_USE_HOST_PTR)
-		   || (mutexes[i] & CL_MEM_COPY_HOST_PTR)) {
-			test(env->context.cl_ctx, mutexes[i], alloc_size, host_buffer,
-			     CL_INVALID_VALUE, &result, test_str);
-		} else {
-			test(env->context.cl_ctx, mutexes[i], alloc_size, NULL,
-			     CL_INVALID_VALUE, &result, test_str);
+			if(   (mixed_mem_flags & CL_MEM_USE_HOST_PTR)
+			   || (mixed_mem_flags & CL_MEM_COPY_HOST_PTR)) {
+				test(env->context.cl_ctx, mixed_mem_flags, alloc_size, host_buffer,
+				     CL_INVALID_VALUE, &result, test_str);
+			} else {
+				test(env->context.cl_ctx, mixed_mem_flags, alloc_size, NULL,
+				     CL_INVALID_VALUE, &result, test_str);
+			}
 		}
 	}
 
