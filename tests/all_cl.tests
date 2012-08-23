@@ -109,4 +109,6 @@ add_plain_program_tester_test(program_execute, 'Scalar comparison ulong', 'execu
 add_plain_program_tester_test(program_execute, 'Scalar comparison ushort', 'execute/scalar_comparison_ushort.cl')
 add_plain_program_tester_test(program_execute, 'Scalar logical op float', 'execute/scalar_logical_float.cl')
 add_plain_program_tester_test(program_execute, 'Scalar logical op int', 'execute/scalar_logical_int.cl')
-add_plain_program_tester_test(program_execute, 'Sizeof', 'execute/sizeof.cl')
+add_plain_program_tester_test(program_execute, 'Sizeof operator', 'execute/sizeof.cl')
+add_plain_program_tester_test(program_execute, 'Comma operator', 'execute/comma.cl')
+add_plain_program_tester_test(program_execute, 'Reference and dereference operators', 'execute/reference.cl')
