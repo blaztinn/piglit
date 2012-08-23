@@ -241,12 +241,16 @@ piglit_cl_program_test_run(const int argc,
 		char* program_source;
 
 		program_source = piglit_load_text_file(config->program_source_file, &size);
-		if(size > 0) {
+		if(program_source != NULL && size > 0) {
 			if(!config->expect_build_fail) {
 				env.program = piglit_cl_build_program_with_source(env.context, 1, &program_source, build_options);
 			} else {
 				env.program = piglit_cl_fail_build_program_with_source(env.context, 1, &program_source, build_options);
 			}
+		} else {
+			fprintf(stderr, "Program source file %s does not exists or is empty\n",
+			        config->program_source_file);
+			return PIGLIT_WARN;
 		}
 		free(program_source);
 	} else if(config->program_binary != NULL) {
@@ -269,12 +273,16 @@ piglit_cl_program_test_run(const int argc,
 			program_binaries[i] = program_binaries[0];
 		}
 
-		if(length > 0) {
+		if(((char**)program_binaries)[0] != NULL && length > 0) {
 			if(!config->expect_build_fail) {
 				env.program = piglit_cl_build_program_with_binary(env.context, lengths, program_binaries, build_options);
 			} else {
 				env.program = piglit_cl_fail_build_program_with_binary(env.context, lengths, program_binaries, build_options);
 			}
+		} else {
+			fprintf(stderr, "Program binary file %s does not exists or is empty\n",
+			        config->program_source_file);
+			return PIGLIT_WARN;
 		}
 
 		free(program_binaries[0]);

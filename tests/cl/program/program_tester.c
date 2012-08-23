@@ -31,6 +31,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <regex.h>
+#include <libgen.h>
 
 #include "piglit-framework-cl-program.h"
 
@@ -1317,7 +1318,35 @@ void init(const int argc,
 	/* Set program */
 	switch(main_argument_type) {
 	case ARG_CONFIG:
-		// do nothing
+		if(   config->program_source_file != NULL
+		   || config->program_binary_file != NULL) {
+			const char* program_file = NULL;
+			char* main_arg_copy = NULL;
+			char* dname = NULL;
+			char* full_path_file = NULL;
+
+			if(config->program_source_file != NULL) {
+				program_file = config->program_source_file;
+			} else {
+				program_file = config->program_binary_file;
+			}
+
+			main_arg_copy = strdup(main_argument);
+			dname = dirname(main_arg_copy);
+			full_path_file = malloc(strlen(dname) + strlen(program_file) + 2); // +2 for '/' and '\0'
+			strcpy(full_path_file, dname);
+			full_path_file[strlen(dname)] = '/';
+			strcpy(full_path_file+strlen(dname)+1, program_file);
+
+			if(config->program_source_file != NULL) {
+				config->program_source_file = full_path_file;
+			} else {
+				config->program_binary_file = full_path_file;
+			}
+
+			add_dynamic_str(full_path_file);
+			free(main_arg_copy);
+		}
 		break;
 	case ARG_SOURCE:
 		config->program_source_file = add_dynamic_str_copy(main_argument);
