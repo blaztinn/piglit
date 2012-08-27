@@ -25,7 +25,7 @@ build_options: -D DEF        # Build options for the program
 #expect_build_fail: true     # Expect that build will fail
 
 kernel_name: add             # Default kernel to run
-expect_test_fail: true       # Expect that tests will fail
+expect_test_fail: true       # Expect that tests will fail (arguments won't check out)
 
 dimensions: 3                # Number of dimensions for ND kernel (default: 1)
 global_size: 10 10 10        # Global work size for ND kernel (default: 1 0 0)
@@ -59,12 +59,12 @@ dimensions: 1           # Override dimensions from [config]
 global_size: 6 6 6      # Override global_size from [config]
 local_size:  2 2 2      # Override global_size from [config]
 
-arg_in: 0 buffer float[6] repeat 5 4  # Buffer argument with repeated data to initialize it (5 4 5 4 5 4)
-arg_in: 1 buffer float[6] random      # Buffer argument with random data to initialize it
-                                      # (not needed here, but provided as example)
-arg_in: 2 int 2                       # Int argument
-arg_out: 1 buffer float[6] repeat 3.1 2.1 \ # Buffer argument with repeated expected data (3 2 3 2 3 2)
-                           tolerance 0.1    # Tolerate result data with +-0.1 offset
+arg_in: 0 buffer float2[6] repeat 5 4  # Buffer argument with repeated data to initialize it (5 4 5 4 5 4)
+arg_in: 1 buffer float2[6] random      # Buffer argument with random data to initialize it
+                                       # (not needed here, but provided as example)
+arg_in: 2 float2 1 1                   # Int argument
+arg_out: 1 buffer float2[6] repeat 4.1 3.1 \ # Buffer argument with repeated expected data (4.1 3.1 4.1 3.1 4.1 3.1)
+                            tolerance 0.1    # Tolerate result data with +-0.1 offset
 
 #ˇˇ Configuration end
 !*/
@@ -83,7 +83,7 @@ kernel void add(global int* x, global int* y, float z) {
 	y[i] = x[i]+z;
 }
 
-kernel void sub(global float* x, global float* y, int z) {
+kernel void sub(global float2* x, global float2* y, float2 z) {
 	int i = get_global_id(0);
 	y[i] = x[i]-z;
 }

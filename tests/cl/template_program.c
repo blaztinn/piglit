@@ -2,6 +2,8 @@
 
 PIGLIT_CL_PROGRAM_TEST_CONFIG_BEGIN
 
+	config.name = "";
+
 PIGLIT_CL_PROGRAM_TEST_CONFIG_END
 
 enum piglit_result
