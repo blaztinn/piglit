@@ -35,6 +35,14 @@
 
 #include "piglit-framework-cl-program.h"
 
+/* Regexes */
+
+/*
+ * IMPORTANT:
+ *     Watch on subexpressions when modifying regexes, because some of them are
+ *     used to retrieve the strings matching them!
+ */
+
 /*
  * Section (section can include whitespace):
  *   <whitespace>[<whitespace>section<whitespace>]<whitespace>
@@ -80,25 +88,26 @@
 #define REGEX_REPEAT          "(REPEAT|repeat)[[:space:]]+" REGEX_DEFINE_ARRAY(REGEX_ARRAY_VALUE)
 
 /* Types */
-#define REGEX_TYPE_CHAR       "char"
-#define REGEX_TYPE_UCHAR      "uchar"
-#define REGEX_TYPE_SHORT      "short"
-#define REGEX_TYPE_USHORT     "ushort"
-#define REGEX_TYPE_INT        "int"
-#define REGEX_TYPE_UINT       "uint"
-#define REGEX_TYPE_LONG       "long"
-#define REGEX_TYPE_ULONG      "ulong"
+#define REGEX_DEFINE_TYPE(type)  type"|"type"2|"type"3|"type"4|"type"8|"type"16"
+#define REGEX_TYPE_CHAR       REGEX_DEFINE_TYPE("char")
+#define REGEX_TYPE_UCHAR      REGEX_DEFINE_TYPE("uchar")
+#define REGEX_TYPE_SHORT      REGEX_DEFINE_TYPE("short")
+#define REGEX_TYPE_USHORT     REGEX_DEFINE_TYPE("ushort")
+#define REGEX_TYPE_INT        REGEX_DEFINE_TYPE("int")
+#define REGEX_TYPE_UINT       REGEX_DEFINE_TYPE("uint")
+#define REGEX_TYPE_LONG       REGEX_DEFINE_TYPE("long")
+#define REGEX_TYPE_ULONG      REGEX_DEFINE_TYPE("ulong")
 // half is defined as unsigned short and C can't read/write its value.
 // Also half is only used as a storage format unless device supports
 // cl_khr_fp16
 // TODO: probably we could use libmpdec to handle this
 //       http://www.bytereef.org/mpdecimal/index.html
 //#define REGEX_TYPE_HALF       "buffer half[1]"
-#define REGEX_TYPE_FLOAT      "float"
+#define REGEX_TYPE_FLOAT      REGEX_DEFINE_TYPE("float")
 // TODO: at runtime check if device supports OpenCL C 1.2
 //       or is cl_khr_fp64
 //#define REGEX_TYPE_DOUBLE     "double"
-#define REGEX_TYPE            "(" REGEX_TYPE_CHAR "|" REGEX_TYPE_UCHAR "|" REGEX_TYPE_SHORT "|" REGEX_TYPE_USHORT "|" REGEX_TYPE_INT "|" REGEX_TYPE_UINT "|" REGEX_TYPE_LONG "|" REGEX_TYPE_ULONG "|" REGEX_TYPE_FLOAT ")"
+#define REGEX_TYPE            REGEX_TYPE_CHAR "|" REGEX_TYPE_UCHAR "|" REGEX_TYPE_SHORT "|" REGEX_TYPE_USHORT "|" REGEX_TYPE_INT "|" REGEX_TYPE_UINT "|" REGEX_TYPE_LONG "|" REGEX_TYPE_ULONG "|" REGEX_TYPE_FLOAT
 
 /*
  * Value argument:
@@ -108,8 +117,8 @@
  */
 #define REGEX_DEFINE_ARG(type, value)  "([[:digit:]]+)[[:space:]]+" type "[[:space:]]+(" value ")"
 #define REGEX_ARG_TOLERANCE            "tolerance[[:space:]]+(" REGEX_VALUE ")"
-#define REGEX_ARG_VALUE     REGEX_DEFINE_ARG( REGEX_TYPE, REGEX_VALUE )
-#define REGEX_ARG_BUFFER    REGEX_DEFINE_ARG( "buffer[[:space:]]+" REGEX_TYPE "\\[([[:digit:]]+)\\]", REGEX_ARRAY "|" REGEX_RANDOM "|" REGEX_REPEAT ) "([[:space:]]+" REGEX_ARG_TOLERANCE ")?"
+#define REGEX_ARG_VALUE     REGEX_DEFINE_ARG( "(" REGEX_TYPE ")", REGEX_ARRAY )
+#define REGEX_ARG_BUFFER    REGEX_DEFINE_ARG( "buffer[[:space:]]+(" REGEX_TYPE ")\\[([[:digit:]]+)\\]", REGEX_ARRAY "|" REGEX_RANDOM "|" REGEX_REPEAT ) "([[:space:]]+" REGEX_ARG_TOLERANCE ")?"
 #define REGEX_ARG           "(" REGEX_ARG_VALUE "|" REGEX_ARG_BUFFER ")"
 
 /* Match whole line */
@@ -190,6 +199,8 @@ struct test_arg {
 	enum test_arg_type type;
 
 	enum cl_type cl_type;
+	size_t cl_size; // 1 for int, 3 for int3
+	size_t cl_mem_size; // 1 for int, 4 for int3
 	size_t length; // for buffers
 
 	/* kernel arg data */
@@ -209,6 +220,8 @@ struct test_arg create_test_arg()
 		.type = TEST_ARG_VALUE,
 
 		.cl_type = TYPE_CHAR,
+		.cl_size = 1,
+		.cl_mem_size = 1,
 		.length = 0,
 
 		.index = 0,
@@ -450,6 +463,17 @@ bool regex_get_match_str(char** dst, const char* src, regmatch_t* pmatch, unsign
 		(*dst)[size] = '\0';
 
 		return true;
+	}
+
+	return false;
+}
+
+bool regex_get_str(char** dst, const char* src, const char* pattern, unsigned int index, int cflags)
+{
+	regmatch_t pmatch[index+1];
+
+	if(regex_get_matches(src, pattern, pmatch, index+1, cflags)) {
+		return regex_get_match_str(dst, src, pmatch, index);
 	}
 
 	return false;
@@ -735,19 +759,34 @@ size_t get_section_content(const char* src, char** content)
 
 void get_test_arg_value(struct test_arg* test_arg, const char* value, size_t length)
 {
-	int i;
+	size_t i; // index in array
+	size_t c; // component in element
+	size_t ra; // offset from the beginning of array
+	size_t rb; // offset from the beginning of bufffer
+
 	int64_t* int_array = NULL;
 	uint64_t* uint_array = NULL;
 	double* float_array = NULL;
 
 	test_arg->value = malloc(test_arg->size);
 
-#define CASE(enum_type, cl_type, get_func, array)             \
-	case enum_type:                                           \
-		get_func(value, &array, length);                      \
-		for(i = 0; i < test_arg->length; i++) {               \
-			((cl_type*)test_arg->value)[i] = array[i%length]; \
-		}                                                     \
+	/*
+	 * We fill the buffer with calculating the right offsets in the buffer (rb) and
+	 * in the array (ra). Buffers of type3 have have stride of 4*sizeof(type) while
+	 * array has a stride of 3*sizeof(parsed_type).
+	 * Also the array index is inside length parameter modulo, so we can fill the
+	 * buffer with repeateable values.
+	 */
+#define CASE(enum_type, cl_type, get_func, array)                   \
+	case enum_type:                                                 \
+		get_func(value, &array, length);                            \
+		for(i = 0; i < test_arg->length; i++) {                     \
+			for(c = 0; c < test_arg->cl_size; c++) {                \
+				ra = i*test_arg->cl_size + c;                       \
+				rb = i*test_arg->cl_mem_size + c;                   \
+				((cl_type*)test_arg->value)[rb] = array[ra%length]; \
+			}                                                       \
+		}                                                           \
 		break;
 
 	switch(test_arg->cl_type) {
@@ -804,16 +843,16 @@ void get_test_arg_tolerance(struct test_arg* test_arg, const char* tolerance_str
 
 void get_test_arg(const char* src, struct test* test, bool arg_in)
 {
-	regmatch_t pmatch[6];
+	regmatch_t pmatch[5];
 	char* index_str = NULL;
 	char* type = NULL;
 	char* value = NULL;
 	struct test_arg test_arg = create_test_arg();
 
 	/* Get matches */
-	if(regex_get_matches(src, REGEX_FULL_MATCH(REGEX_ARG_VALUE), pmatch, 6, REG_NEWLINE)) { // value
+	if(regex_get_matches(src, REGEX_FULL_MATCH(REGEX_ARG_VALUE), pmatch, 5, REG_NEWLINE)) { // value
 		// do nothing
-	} else if(regex_get_matches(src, REGEX_FULL_MATCH(REGEX_ARG_BUFFER), pmatch, 6, REG_NEWLINE)) { // buffer
+	} else if(regex_get_matches(src, REGEX_FULL_MATCH(REGEX_ARG_BUFFER), pmatch, 5, REG_NEWLINE)) { // buffer
 		// do nothing
 	} else {
 		fprintf(stderr, "Invalid configuration, invalid test argument: %s\n", src);
@@ -825,16 +864,26 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 	test_arg.index = get_int(index_str);
 	free(index_str);
 
-	/* Set type and size (partially for buffers) */
+	/* Set type, cl_size, cl_mem_size and size (partially for buffers) */
 	regex_get_match_str(&type, src, pmatch, 2);
-
-#define IF(regex_type, enum_type, size_type)              \
-	if(regex_match(type, REGEX_FULL_MATCH(regex_type))) { \
-		test_arg.cl_type = enum_type;                     \
-		test_arg.size = sizeof(size_type);                \
+	if(regex_match(type, "[[:digit:]]")) {
+		char* type_size_str;
+		regex_get_str(&type_size_str, type, "[[:digit:]]", 0, REG_NEWLINE);
+		test_arg.cl_size = get_int(type_size_str);
+		test_arg.cl_mem_size = test_arg.cl_size != 3 ? test_arg.cl_size : 4; // test if we have type3
+		free(type_size_str);
+	} else {
+		test_arg.cl_size = 1;
+		test_arg.cl_mem_size = 1;
 	}
-#define ELSEIF(regex_type, enum_type, size_type) \
-	else IF(regex_type, enum_type, size_type)
+
+#define IF(regex_type, enum_type, main_type)                       \
+	if(regex_match(type, REGEX_FULL_MATCH(regex_type))) {          \
+		test_arg.cl_type = enum_type;                              \
+		test_arg.size = sizeof(main_type) * test_arg.cl_mem_size;  \
+	}
+#define ELSEIF(regex_type, enum_type, main_type) \
+	else IF(regex_type, enum_type, main_type)
 
 	IF    (REGEX_TYPE_CHAR,   TYPE_CHAR,   cl_char)
 	ELSEIF(REGEX_TYPE_UCHAR,  TYPE_UCHAR,  cl_uchar)
@@ -848,6 +897,8 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 
 #undef IF
 #undef ELSEIF
+
+	free(type);
 
 	/* Get arg type, size and value */
 	if(regex_match(src, REGEX_FULL_MATCH(REGEX_ARG_VALUE))) { // value
@@ -865,10 +916,10 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 
 		/* Get value */
 		regex_get_match_str(&value, src, pmatch, 3);
-		if(regex_match(value, REGEX_NULL)) {
+		if(regex_match(value, REGEX_FULL_MATCH(REGEX_NULL))) {
 			test_arg.value = NULL;
 		} else {
-			get_test_arg_value(&test_arg, value, 1);
+			get_test_arg_value(&test_arg, value, test_arg.cl_size);
 		}
 		free(value);
 	} else if(regex_match(src, REGEX_FULL_MATCH(REGEX_ARG_BUFFER))) { // buffer
@@ -898,7 +949,7 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 
 		/* Get value */
 		regex_get_match_str(&value, src, pmatch, 4);
-		if(regex_match(value, REGEX_NULL)) {
+		if(regex_match(value, REGEX_FULL_MATCH(REGEX_NULL))) {
 			test_arg.value = NULL;
 			if(!arg_in) {
 				fprintf(stderr, "Invalid configuration, out argument buffer value can not be NULL: %s\n", src);
@@ -907,12 +958,12 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 		} else {
 			test_arg.value = malloc(test_arg.size);
 
-			if(regex_match(value, REGEX_RANDOM)) {
+			if(regex_match(value, REGEX_FULL_MATCH(REGEX_RANDOM))) {
 				if(!arg_in) {
 					fprintf(stderr, "Invalid configuration, out argument buffer can not be random: %s\n", src);
 					exit_report_result(PIGLIT_WARN);
 				}
-			} else if(regex_match(value, REGEX_REPEAT)) {
+			} else if(regex_match(value, REGEX_FULL_MATCH(REGEX_REPEAT))) {
 				regmatch_t rmatch[3];
 				char* repeat_value_str;
 
@@ -923,7 +974,7 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 
 				free(repeat_value_str);
 			} else if(regex_match(value, REGEX_ARRAY)) {
-				get_test_arg_value(&test_arg, value, test_arg.length);
+				get_test_arg_value(&test_arg, value, test_arg.length * test_arg.cl_size);
 			}
 		}
 		free(value);
@@ -1397,34 +1448,55 @@ void free_buffer_args(struct buffer_arg** buffer_args, unsigned int* num_buffer_
 bool check_test_arg_value(struct test_arg test_arg,
                           void* value)
 {
-	size_t i;
+	size_t i; // index in array
+	size_t c; // component in element
+	size_t ra; // offset from the beginning of parsed array
+	size_t rb; // offset from the beginning of buffer
 
-#define CASEI(enum_type, type, cl_type)                              \
-	case enum_type:                                                  \
-		for(i = 0; i < test_arg.length; i++) {                       \
-			if(!piglit_cl_probe_integer(((cl_type*)value)[i], ((cl_type*)test_arg.value)[i], test_arg.toli)) { \
-				printf("Error at %s[%zu]\n", type, i);               \
-				return false;                                        \
-			}                                                        \
-		}                                                            \
+#define CASEI(enum_type, type, cl_type)                                     \
+	case enum_type:                                                         \
+		for(i = 0; i < test_arg.length; i++) {                              \
+			for(c = 0; c < test_arg.cl_size; c++) {                         \
+				rb = i*test_arg.cl_mem_size + c;                            \
+				if(!piglit_cl_probe_integer(((cl_type*)value)[rb],          \
+				                            ((cl_type*)test_arg.value)[rb], \
+				                            test_arg.toli)) {               \
+					ra = i*test_arg.cl_size + c;                            \
+					printf("Error at %s[%zu]\n", type, ra);                 \
+					return false;                                           \
+				}                                                           \
+			}                                                               \
+		}                                                                   \
 		return true;
-#define CASEU(enum_type, type, cl_type)                              \
-	case enum_type:                                                  \
-		for(i = 0; i < test_arg.length; i++) {                       \
-			if(!piglit_cl_probe_uinteger(((cl_type*)value)[i], ((cl_type*)test_arg.value)[i], test_arg.tolu)) { \
-				printf("Error at %s[%zu]\n", type, i);               \
-				return false;                                        \
-			}                                                        \
-		}                                                            \
+#define CASEU(enum_type, type, cl_type)                                      \
+	case enum_type:                                                          \
+		for(i = 0; i < test_arg.length; i++) {                               \
+			for(c = 0; c < test_arg.cl_size; c++) {                          \
+				rb = i*test_arg.cl_mem_size + c;                             \
+				if(!piglit_cl_probe_uinteger(((cl_type*)value)[rb],          \
+				                             ((cl_type*)test_arg.value)[rb], \
+				                             test_arg.tolu)) {               \
+					ra = i*test_arg.cl_size + c;                             \
+					printf("Error at %s[%zu]\n", type, ra);                  \
+					return false;                                            \
+				}                                                            \
+			}                                                                \
+		}                                                                    \
 		return true;
-#define CASEF(enum_type, type, cl_type)                              \
-	case enum_type:                                                  \
-		for(i = 0; i < test_arg.length; i++) {                       \
-			if(!piglit_cl_probe_floating(((cl_type*)value)[i], ((cl_type*)test_arg.value)[i], test_arg.tolf)) { \
-				printf("Error at %s[%zu]\n", type, i);               \
-				return false;                                        \
-			}                                                        \
-		}                                                            \
+#define CASEF(enum_type, type, cl_type)                                      \
+	case enum_type:                                                          \
+		for(i = 0; i < test_arg.length; i++) {                               \
+			for(c = 0; c < test_arg.cl_size; c++) {                          \
+				rb = i*test_arg.cl_mem_size + c;                             \
+				if(!piglit_cl_probe_floating(((cl_type*)value)[rb],          \
+				                             ((cl_type*)test_arg.value)[rb], \
+				                             test_arg.tolf)) {               \
+					ra = i*test_arg.cl_size + c;                             \
+					printf("Error at %s[%zu]\n", type, ra);                  \
+					return false;                                            \
+				}                                                            \
+			}                                                                \
+		}                                                                    \
 		return true;
 
 	switch(test_arg.cl_type) {
