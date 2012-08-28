@@ -75,6 +75,9 @@ add_plain_test(api, 'clGetEventInfo', ['cl-api-get-event-info'])
 add_plain_test(api, 'clRetainEvent and clReleaseEvent', ['cl-api-retain_release-event'])
 
 # Program
+add_plain_test(program, 'Run kernel with max work item sizes', ['cl-program-max-work-item-sizes'])
+
+# Program tester
 program_build = Group()
 program_build_fail = Group()
 program_execute = Group()
