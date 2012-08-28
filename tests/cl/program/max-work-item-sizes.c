@@ -83,7 +83,7 @@ piglit_cl_test(const int argc,
 
 		// set kernel args and run the kernel
 		piglit_cl_set_kernel_buffer_arg(env->kernel, 0, &mem_out);
-		piglit_cl_enqueue_ND_range_kernel(env->context.command_queues[0], env->kernel, i+1, global_size, global_size);
+		piglit_cl_execute_ND_range_kernel(env->context.command_queues[0], env->kernel, i+1, global_size, global_size);
 
 		// read back out buffer and check its values
 		piglit_cl_read_buffer(env->context.command_queues[0], mem_out, 0, global_size[i] * sizeof(cl_uint), ptr_out);

@@ -1653,7 +1653,7 @@ test_kernel(const struct piglit_cl_program_test_config* config,
 	/* Execute kernel */
 	printf("Running the kernel...\n");
 
-	if(!piglit_cl_enqueue_ND_range_kernel(env->context.command_queues[0],
+	if(!piglit_cl_execute_ND_range_kernel(env->context.command_queues[0],
 	                                      kernel,
 	                                      test.work_dimensions,
 	                                      test.global_work_size,

@@ -936,6 +936,30 @@ piglit_cl_enqueue_ND_range_kernel(cl_command_queue command_queue, cl_kernel kern
 }
 
 bool
+piglit_cl_execute_ND_range_kernel(cl_command_queue command_queue, cl_kernel kernel, cl_uint work_dim, const size_t* global_work_size, const size_t* local_work_size)
+{
+	int errNo;
+
+	if(!piglit_cl_enqueue_ND_range_kernel(command_queue,
+	                                     kernel,
+	                                     work_dim,
+	                                     global_work_size,
+	                                     local_work_size)) {
+		return false;
+	}
+
+	errNo = clFinish(command_queue);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not wait for kernel to finish: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
 piglit_cl_enqueue_task(cl_command_queue command_queue, cl_kernel kernel)
 {
 	cl_int errNo;
@@ -945,6 +969,27 @@ piglit_cl_enqueue_task(cl_command_queue command_queue, cl_kernel kernel)
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
 		fprintf(stderr,
 		        "Could not enqueue task: %s\n",
+		        piglit_cl_get_error_name(errNo));
+		return false;
+	}
+
+	return true;
+}
+
+bool
+piglit_cl_execute_task(cl_command_queue command_queue, cl_kernel kernel)
+{
+	int errNo;
+
+	if(!piglit_cl_enqueue_task(command_queue,
+	                           kernel)) {
+		return false;
+	}
+
+	errNo = clFinish(command_queue);
+	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
+		fprintf(stderr,
+		        "Could not wait for kernel to finish: %s\n",
 		        piglit_cl_get_error_name(errNo));
 		return false;
 	}
