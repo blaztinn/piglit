@@ -956,9 +956,8 @@ void get_test_arg(const char* src, struct test* test, bool arg_in)
 				exit_report_result(PIGLIT_WARN);
 			}
 		} else {
-			test_arg.value = malloc(test_arg.size);
-
 			if(regex_match(value, REGEX_FULL_MATCH(REGEX_RANDOM))) {
+				test_arg.value = malloc(test_arg.size);
 				if(!arg_in) {
 					fprintf(stderr, "Invalid configuration, out argument buffer can not be random: %s\n", src);
 					exit_report_result(PIGLIT_WARN);
