@@ -25,13 +25,18 @@ def add_plain_program_tester_test(group, name, filename):
 # Collecting all tests
 profile = TestProfile()
 
+custom = Group()
 api = Group()
 program = Group()
+profile.tests['Custom'] = custom
 profile.tests['API'] = api
 profile.tests['Program'] = program
 
 ######
 # Tests
+
+# Custom
+add_plain_test(custom, 'Run simple kernel', ['cl-custom-run-simple-kernel'])
 
 # API
 #  Platform
