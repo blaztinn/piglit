@@ -136,10 +136,10 @@ piglit_cl_test(const int argc,
 		size_t* partial_lengths = malloc(2 * sizeof(size_t));
 
 		/* separate */
-		test(env->context.cl_ctx, 1, &strings[i], &lengths[i],
+		test(env->context->cl_ctx, 1, &strings[i], &lengths[i],
 		     CL_SUCCESS, &result,
 		     "Create program with 1 source string and defined length");
-		test(env->context.cl_ctx, 1, &strings[i], NULL,
+		test(env->context->cl_ctx, 1, &strings[i], NULL,
 		     CL_SUCCESS, &result,
 		     "Create program with 1 source string and lenghts == NULL");
 		
@@ -147,7 +147,7 @@ piglit_cl_test(const int argc,
 		partial_lengths[i] = 0;
 		partial_lengths[(i+1)%2] = lengths[(i+1)%2];
 		
-		test(env->context.cl_ctx, 2, strings, partial_lengths,
+		test(env->context->cl_ctx, 2, strings, partial_lengths,
 		     CL_SUCCESS, &result,
 		     "Create program with multiple source strings and only some lenghts defined (others are NULL)");
 
@@ -155,10 +155,10 @@ piglit_cl_test(const int argc,
 	}
 
 	/* all */
-	test(env->context.cl_ctx, 2, strings, lengths,
+	test(env->context->cl_ctx, 2, strings, lengths,
 	     CL_SUCCESS, &result,
 	     "Create program with multiple source strings and defined lengths");
-	test(env->context.cl_ctx, 2, strings, NULL,
+	test(env->context->cl_ctx, 2, strings, NULL,
 	     CL_SUCCESS, &result,
 	     "Create program with multiple source strings and lenghts == NULL");
 	
@@ -176,13 +176,13 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_VALUE if count is zero or if strings or
 	 * any entry in strings is NULL.
 	 */
-	test(env->context.cl_ctx, 0, strings, NULL,
+	test(env->context->cl_ctx, 0, strings, NULL,
 	     CL_INVALID_VALUE, &result,
 	     "Trigger CL_INVALID_VALUE when count is zero");
-	test(env->context.cl_ctx, 0, NULL, NULL,
+	test(env->context->cl_ctx, 0, NULL, NULL,
 	     CL_INVALID_VALUE, &result,
 	     "Trigger CL_INVALID_VALUE when strings is NULL");
-	test(env->context.cl_ctx, 1, &null, NULL,
+	test(env->context->cl_ctx, 1, &null, NULL,
 	     CL_INVALID_VALUE, &result,
 	     "Trigger CL_INVALID_VALUE when any entry in strings is NULL");
 

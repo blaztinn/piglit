@@ -119,7 +119,7 @@ piglit_cl_test(const int argc,
 	 * CL_INVALID_PROGRAM_EXECUTABLE if there is no successfully built executable for any device in
 	 * program.
 	 */
-	temp_program = clCreateProgramWithSource(env->context.cl_ctx,
+	temp_program = clCreateProgramWithSource(env->context->cl_ctx,
 	                                         1,
 	                                         (const char**)&config->program_source,
 	                                         NULL,

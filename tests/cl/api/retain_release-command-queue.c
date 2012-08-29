@@ -57,7 +57,7 @@ piglit_cl_test(const int argc,
 
 	/*** Normal usage ***/
 
-	cl_command_queue command_queue = clCreateCommandQueue(env->context.cl_ctx,
+	cl_command_queue command_queue = clCreateCommandQueue(env->context->cl_ctx,
 	                                                      env->device_id,
 	                                                      0,
 	                                                      &errNo);

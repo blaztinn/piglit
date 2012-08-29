@@ -57,7 +57,7 @@ piglit_cl_test(const int argc,
 
 	int i;
 	cl_int errNo;
-	cl_command_queue command_queue = env->context.command_queues[0];
+	cl_command_queue command_queue = env->context->command_queues[0];
 
 	size_t param_value_size;
 	void* param_value;

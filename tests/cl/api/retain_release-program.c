@@ -59,7 +59,7 @@ piglit_cl_test(const int argc,
 
 	/*** Normal usage ***/
 
-	cl_program program = clCreateProgramWithSource(env->context.cl_ctx,
+	cl_program program = clCreateProgramWithSource(env->context->cl_ctx,
 	                                               1,
 	                                               &dummy_kernel,
 	                                               NULL,

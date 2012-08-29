@@ -128,13 +128,14 @@ piglit_cl_program_test_run(const int argc,
 		.platform_id = NULL,
 		.device_id = NULL,
 
+		.context = NULL,
+
 		.program = NULL,
 
 		.kernel = NULL,
 	};
 
 	int i;
-	bool context_success;
 	char* build_options = malloc(1 * sizeof(char));
 	unsigned int num_devices;
 	cl_device_id* device_ids;
@@ -185,12 +186,12 @@ piglit_cl_program_test_run(const int argc,
 
 	/* Create context */
 	if(config->run_per_platform) {
-		context_success = piglit_cl_create_context(&env.context, platform_id, device_ids, num_devices);
+		env.context = piglit_cl_create_context(platform_id, device_ids, num_devices);
 	} else { // config->run_per_device
-		context_success = piglit_cl_create_context(&env.context, platform_id, &device_id, 1);
+		env.context = piglit_cl_create_context(platform_id, &device_id, 1);
 	}
 
-	if(!context_success) {
+	if(env.context == NULL) {
 		return PIGLIT_FAIL;
 	}
 
@@ -263,12 +264,12 @@ piglit_cl_program_test_run(const int argc,
 		}
 	} else if(config->program_binary_file != NULL) {
 		unsigned int length;
-		size_t* lengths = malloc(sizeof(size_t) * env.context.num_devices);
-		unsigned char** program_binaries = malloc(sizeof(unsigned char**) * env.context.num_devices);
+		size_t* lengths = malloc(sizeof(size_t) * env.context->num_devices);
+		unsigned char** program_binaries = malloc(sizeof(unsigned char**) * env.context->num_devices);
 
 		((char**)program_binaries)[0] = piglit_load_text_file(config->program_binary_file, &length);
 		lengths[0] = length;
-		for(i = 1; i < env.context.num_devices; i++) {
+		for(i = 1; i < env.context->num_devices; i++) {
 			lengths[i] = lengths[0];
 			program_binaries[i] = program_binaries[0];
 		}
@@ -324,7 +325,7 @@ piglit_cl_program_test_run(const int argc,
 	clReleaseProgram(env.program);
 
 	/* Release context */
-	piglit_cl_release_context(&env.context);
+	piglit_cl_release_context(env.context);
 
 	return result;
 }

@@ -309,7 +309,7 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_type
  *
  * Helper context struct for easier OpenCL context manipulation.
  */
-struct piglit_cl_context {
+struct _piglit_cl_context {
 	cl_platform_id platform_id; /**< Platform used to create context. */
 	cl_context cl_ctx; /**< OpenCL context. */
 
@@ -319,6 +319,7 @@ struct piglit_cl_context {
 	cl_command_queue* command_queues; /**< Command queues available in the context.
 	                                       Each command queue is assigned to device id in \c device_ids with the same index. */
 };
+typedef struct _piglit_cl_context* piglit_cl_context;
 
 /**
  * \brief Create \c piglit_cl_context
@@ -332,8 +333,8 @@ struct piglit_cl_context {
  * @param num_devices  Number of members in \c device_ids.
  * @return             Return \c true on success.
  */
-bool
-piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices);
+piglit_cl_context
+piglit_cl_create_context(cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices);
 
 /**
  * \brief Release \c piglit_cl_context
@@ -344,7 +345,7 @@ piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platf
  * @param context  Context to release.
  */
 void
-piglit_cl_release_context(struct piglit_cl_context* context);
+piglit_cl_release_context(piglit_cl_context context);
 
 /**
  * \brief Create and build a program with source.
@@ -358,7 +359,7 @@ piglit_cl_release_context(struct piglit_cl_context* context);
  * @return             Built program or NULL on fail.
  */
 cl_program
-piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options);
+piglit_cl_build_program_with_source(piglit_cl_context context, cl_uint count, char** strings, const char* options);
 
 /**
  * \brief Create and try to build a program with invalid source.
@@ -373,7 +374,7 @@ piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint co
  * @return             Unsuccessfully built program or NULL on fail.
  */
 cl_program
-piglit_cl_fail_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options);
+piglit_cl_fail_build_program_with_source(piglit_cl_context context, cl_uint count, char** strings, const char* options);
 
 /**
  * \brief Create and build a program with binary.
@@ -388,7 +389,7 @@ piglit_cl_fail_build_program_with_source(struct piglit_cl_context context, cl_ui
  * @return             Built program or NULL on fail.
  */
 cl_program
-piglit_cl_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
+piglit_cl_build_program_with_binary(piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
 
 /**
  * \brief Create and try to build a program with invalid binary.
@@ -403,7 +404,7 @@ piglit_cl_build_program_with_binary(struct piglit_cl_context context, size_t* le
  * @return             Unsuccessfully built program or NULL on fail.
  */
 cl_program
-piglit_cl_fail_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
+piglit_cl_fail_build_program_with_binary(piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options);
 
 /**
  * \brief Create a buffer.
@@ -414,7 +415,7 @@ piglit_cl_fail_build_program_with_binary(struct piglit_cl_context context, size_
  * @return             Created buffer or NULL on fail.
  */
 cl_mem
-piglit_cl_create_buffer(struct piglit_cl_context context, cl_mem_flags flags, size_t size);
+piglit_cl_create_buffer(piglit_cl_context context, cl_mem_flags flags, size_t size);
 
 /**
  * \brief Blocking write to a buffer.

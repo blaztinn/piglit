@@ -67,13 +67,13 @@ piglit_cl_test(const int argc,
 	int num_event_infos = PIGLIT_CL_ENUM_NUM(cl_event_info, env->version);
 	const cl_event_info* event_infos = PIGLIT_CL_ENUM_ARRAY(cl_event_info);
 
-	memobj = clCreateBuffer(env->context.cl_ctx,
+	memobj = clCreateBuffer(env->context->cl_ctx,
 	                        CL_MEM_READ_WRITE,
 	                        512,
 	                        NULL,
 	                        NULL);
 
-	errNo = clEnqueueReadBuffer(env->context.command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event);
+	errNo = clEnqueueReadBuffer(env->context->command_queues[0], memobj, true, 0, 1, buffer, 0, NULL, &event);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)){
 		fprintf(stderr,
 		        "Failed (error code: %s): Create an event by enqueueing a buffer read.\n",

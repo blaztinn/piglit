@@ -555,9 +555,11 @@ unsigned int piglit_cl_get_device_ids(cl_platform_id platform_id, cl_device_type
 	return 0;
 }
 
-bool
-piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices)
+piglit_cl_context
+piglit_cl_create_context(cl_platform_id platform_id, const cl_device_id device_ids[], unsigned int num_devices)
 {
+	piglit_cl_context context = malloc(sizeof(struct _piglit_cl_context));
+
 	int i;
 	cl_int errNo;
 	cl_context_properties cl_ctx_properties[] = {
@@ -582,10 +584,11 @@ piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platf
 	                                  &errNo);
 	if(errNo != CL_SUCCESS) {
 		free(context->device_ids);
+		free(context);
 		fprintf(stderr,
 		        "Could not create context: %s\n",
 		        piglit_cl_get_error_name(errNo));
-		return false;
+		return NULL;
 	}
 
 	/* create and assing command queues */
@@ -599,22 +602,24 @@ piglit_cl_create_context(struct piglit_cl_context *context, cl_platform_id platf
 			clReleaseContext(context->cl_ctx);
 			free(context->device_ids);
 			free(context->command_queues);
+			free(context);
 			fprintf(stderr,
 			        "Could not create command queue: %s\n",
 			        piglit_cl_get_error_name(errNo));
-			return false;
+			return NULL;
 		}
 	}
 
-	return true;
+	return context;
 }
 
-void piglit_cl_release_context(struct piglit_cl_context *context)
+void piglit_cl_release_context(piglit_cl_context context)
 {
 	int i;
 
-	/* remove platform */
-	context->platform_id = NULL;
+	if(context == NULL) {
+		return;
+	}
 
 	/* release command queues */
 	for(i = 0; i < context->num_devices; i++) {
@@ -622,27 +627,25 @@ void piglit_cl_release_context(struct piglit_cl_context *context)
 			printf("Command queue already released\n");
 		}
 	}
-	context->command_queues = NULL;
-
-	/* free devices array */
-	context->num_devices = 0;
-	free(context->device_ids);
-	context->device_ids = NULL;
 
 	/* release context */
 	if(clReleaseContext(context->cl_ctx) != CL_SUCCESS) {
 		printf("Context already released\n");
 	}
-	context->cl_ctx = NULL;
+
+	/* free memory */
+	free(context->device_ids);
+	free(context->command_queues);
+	free(context);
 }
 
 cl_program
-piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, cl_uint count, char** strings, const char* options, bool fail)
+piglit_cl_build_program_with_source_extended(piglit_cl_context context, cl_uint count, char** strings, const char* options, bool fail)
 {
 	cl_int errNo;
 	cl_program program;
 
-	program = clCreateProgramWithSource(context.cl_ctx,
+	program = clCreateProgramWithSource(context->cl_ctx,
 	                                    count,
 	                                    (const char**)strings,
 	                                    NULL,
@@ -655,8 +658,8 @@ piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, c
 	}
 	
 	errNo = clBuildProgram(program,
-	                       context.num_devices,
-	                       context.device_ids,
+	                       context->num_devices,
+	                       context->device_ids,
 	                       options,
 	                       NULL,
 	                       NULL);
@@ -674,9 +677,9 @@ piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, c
 			printf("%s\n", strings[i]);
 		}*/
 
-		for(i = 0; i < context.num_devices; i++) {
-			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
-			char* log = piglit_cl_get_program_build_info(program, context.device_ids[i], CL_PROGRAM_BUILD_LOG);
+		for(i = 0; i < context->num_devices; i++) {
+			char* device_name = piglit_cl_get_device_info(context->device_ids[i], CL_DEVICE_NAME);
+			char* log = piglit_cl_get_program_build_info(program, context->device_ids[i], CL_PROGRAM_BUILD_LOG);
 			
 			printf("Build log for device %s:\n -------- \n%s\n -------- \n",
 			       device_name,
@@ -694,28 +697,28 @@ piglit_cl_build_program_with_source_extended(struct piglit_cl_context context, c
 }
 
 cl_program
-piglit_cl_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options)
+piglit_cl_build_program_with_source(piglit_cl_context context, cl_uint count, char** strings, const char* options)
 {
 	return piglit_cl_build_program_with_source_extended(context, count, strings, options, false);
 }
 
 cl_program
-piglit_cl_fail_build_program_with_source(struct piglit_cl_context context, cl_uint count, char** strings, const char* options)
+piglit_cl_fail_build_program_with_source(piglit_cl_context context, cl_uint count, char** strings, const char* options)
 {
 	return piglit_cl_build_program_with_source_extended(context, count, strings, options, true);
 }
 
 cl_program
-piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options, bool fail)
+piglit_cl_build_program_with_binary_extended(piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options, bool fail)
 {
 	cl_int errNo;
 	cl_program program;
 
-	cl_int* binary_status = malloc(sizeof(cl_int) * context.num_devices);
+	cl_int* binary_status = malloc(sizeof(cl_int) * context->num_devices);
 
-	program = clCreateProgramWithBinary(context.cl_ctx,
-	                                    context.num_devices,
-	                                    context.device_ids,
+	program = clCreateProgramWithBinary(context->cl_ctx,
+	                                    context->num_devices,
+	                                    context->device_ids,
 	                                    lenghts,
 	                                    (const unsigned char**)binaries,
 	                                    binary_status,
@@ -728,8 +731,8 @@ piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, s
 		        piglit_cl_get_error_name(errNo));
 
 		printf("Create error with binaries:\n");
-		for(i = 0; i < context.num_devices; i++) {
-			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
+		for(i = 0; i < context->num_devices; i++) {
+			char* device_name = piglit_cl_get_device_info(context->device_ids[i], CL_DEVICE_NAME);
 			
 			printf("Error for %s: %s\n",
 			       device_name,
@@ -744,8 +747,8 @@ piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, s
 	free(binary_status);
 	
 	errNo = clBuildProgram(program,
-	                       context.num_devices,
-	                       context.device_ids,
+	                       context->num_devices,
+	                       context->device_ids,
 	                       options,
 	                       NULL,
 	                       NULL);
@@ -760,9 +763,9 @@ piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, s
 
 		printf("Build log for binaries.\n");
 
-		for(i = 0; i < context.num_devices; i++) {
-			char* device_name = piglit_cl_get_device_info(context.device_ids[i], CL_DEVICE_NAME);
-			char* log = piglit_cl_get_program_build_info(program, context.device_ids[i], CL_PROGRAM_BUILD_LOG);
+		for(i = 0; i < context->num_devices; i++) {
+			char* device_name = piglit_cl_get_device_info(context->device_ids[i], CL_DEVICE_NAME);
+			char* log = piglit_cl_get_program_build_info(program, context->device_ids[i], CL_PROGRAM_BUILD_LOG);
 			
 			printf("Build log for device %s:\n -------- \n%s\n -------- \n",
 			       device_name,
@@ -780,24 +783,24 @@ piglit_cl_build_program_with_binary_extended(struct piglit_cl_context context, s
 }
 
 cl_program
-piglit_cl_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
+piglit_cl_build_program_with_binary(piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
 {
 	return piglit_cl_build_program_with_binary_extended(context, lenghts, binaries, options, false);
 }
 
 cl_program
-piglit_cl_fail_build_program_with_binary(struct piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
+piglit_cl_fail_build_program_with_binary(piglit_cl_context context, size_t* lenghts, unsigned char** binaries, const char* options)
 {
 	return piglit_cl_build_program_with_binary_extended(context, lenghts, binaries, options, true);
 }
 
 cl_mem
-piglit_cl_create_buffer(struct piglit_cl_context context, cl_mem_flags flags, size_t size)
+piglit_cl_create_buffer(piglit_cl_context context, cl_mem_flags flags, size_t size)
 {
 	cl_int errNo;
 	cl_mem buffer;
 
-	buffer = clCreateBuffer(context.cl_ctx, flags, size, NULL, &errNo);
+	buffer = clCreateBuffer(context->cl_ctx, flags, size, NULL, &errNo);
 	if(!piglit_cl_check_error(errNo, CL_SUCCESS)) {
 		fprintf(stderr,
 		        "Could not create buffer: %s\n",

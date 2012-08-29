@@ -1578,7 +1578,7 @@ test_kernel(const struct piglit_cl_program_test_config* config,
 				                                            CL_MEM_READ_WRITE,
 				                                            test_arg.size);
 				if(   buffer_arg.buffer != NULL
-				   && piglit_cl_write_buffer(env->context.command_queues[0], buffer_arg.buffer, 0, test_arg.size, test_arg.value)
+				   && piglit_cl_write_buffer(env->context->command_queues[0], buffer_arg.buffer, 0, test_arg.size, test_arg.value)
 				   && piglit_cl_set_kernel_arg(kernel, buffer_arg.index, sizeof(cl_mem), &buffer_arg.buffer)) {
 					arg_set = true;
 				}
@@ -1653,7 +1653,7 @@ test_kernel(const struct piglit_cl_program_test_config* config,
 	/* Execute kernel */
 	printf("Running the kernel...\n");
 
-	if(!piglit_cl_execute_ND_range_kernel(env->context.command_queues[0],
+	if(!piglit_cl_execute_ND_range_kernel(env->context->command_queues[0],
 	                                      kernel,
 	                                      test.work_dimensions,
 	                                      test.global_work_size,
@@ -1689,7 +1689,7 @@ test_kernel(const struct piglit_cl_program_test_config* config,
 			if(test_arg.value != NULL) {
 				void* read_value = malloc(test_arg.size);
 
-				if(piglit_cl_read_buffer(env->context.command_queues[0], buffer_arg.buffer, 0, test_arg.size, read_value)) {
+				if(piglit_cl_read_buffer(env->context->command_queues[0], buffer_arg.buffer, 0, test_arg.size, read_value)) {
 					arg_valid = true;
 					if(check_test_arg_value(test_arg, read_value)) {
 						printf(" Argument %u: PASS%s\n",

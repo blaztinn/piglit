@@ -128,10 +128,10 @@ struct piglit_cl_api_test_env {
 	cl_device_id device_id; /**< OpenCL device id.
 	                             Holds valid device id if \c run_per_device is \c true. */
 
-	struct piglit_cl_context context; /**< Generated helper context.
-	                                       It is generated only if \c create_context
-	                                       and one of \c run_per_device or \c run_per_platform
-	                                       is \c true. Or if \c program_source is defined.*/
+	piglit_cl_context context; /**< Generated helper context.
+	                                It is generated only if \c create_context
+	                                and one of \c run_per_device or \c run_per_platform
+	                                is \c true. Or if \c program_source is defined.*/
 
 	cl_program program; /**< OpenCL program.
 	                         Holds valid program if \c program_source is a NULL-terminated string

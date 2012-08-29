@@ -194,7 +194,7 @@ piglit_cl_test(const int argc,
 			cl_mem buffer;
 
 			/* test if function returns right values */
-			test(env->context.cl_ctx,
+			test(env->context->cl_ctx,
 			     mixed_mem_flags,
 			     alloc_size,
 			     host_buffer,
@@ -203,7 +203,7 @@ piglit_cl_test(const int argc,
 			     test_str);
 
 			/* test if buffer gets initialized properly */
-			buffer = clCreateBuffer(env->context.cl_ctx,
+			buffer = clCreateBuffer(env->context->cl_ctx,
 			                        mixed_mem_flags,
 			                        alloc_size,
 			                        host_buffer,
@@ -211,7 +211,7 @@ piglit_cl_test(const int argc,
 			if(buffer) {
 				cl_int errNo;
 				
-				errNo = clEnqueueReadBuffer(env->context.command_queues[0],
+				errNo = clEnqueueReadBuffer(env->context->command_queues[0],
 				                            buffer,
 				                            true,
 				                            0,
@@ -233,14 +233,14 @@ piglit_cl_test(const int argc,
 				}
 			}
 		} else {
-			test(env->context.cl_ctx, mixed_mem_flags, alloc_size, NULL,
+			test(env->context->cl_ctx, mixed_mem_flags, alloc_size, NULL,
 			     CL_SUCCESS, &result, test_str);
 		}
 	}
 
 #if defined(CL_VERSION_1_2)
 	if(env->version >= 12) {
-		test(env->context.cl_ctx,
+		test(env->context->cl_ctx,
 		     0, // defaults to CL_MEM_READ_WRITE
 		     alloc_size,
 		     NULL,
@@ -273,10 +273,10 @@ piglit_cl_test(const int argc,
 
 			if(   (mixed_mem_flags & CL_MEM_USE_HOST_PTR)
 			   || (mixed_mem_flags & CL_MEM_COPY_HOST_PTR)) {
-				test(env->context.cl_ctx, mixed_mem_flags, alloc_size, host_buffer,
+				test(env->context->cl_ctx, mixed_mem_flags, alloc_size, host_buffer,
 				     CL_INVALID_VALUE, &result, test_str);
 			} else {
-				test(env->context.cl_ctx, mixed_mem_flags, alloc_size, NULL,
+				test(env->context->cl_ctx, mixed_mem_flags, alloc_size, NULL,
 				     CL_INVALID_VALUE, &result, test_str);
 			}
 		}
@@ -288,15 +288,15 @@ piglit_cl_test(const int argc,
 	 * OpenCL Device Queries for clGetDeviceInfo for all devices
 	 * in context.
 	 */
-	test(env->context.cl_ctx, CL_MEM_READ_WRITE, 0, NULL,
+	test(env->context->cl_ctx, CL_MEM_READ_WRITE, 0, NULL,
 	     CL_INVALID_BUFFER_SIZE, &result,
 	     "Trigger CL_INVALID_BUFFER_SIZE if size is 0");
 	
 	max_alloc = 0;
-	for(i = 0; i < env->context.num_devices; i++) {
+	for(i = 0; i < env->context->num_devices; i++) {
 		cl_ulong* max_device_alloc;
 
-		max_device_alloc = piglit_cl_get_device_info(env->context.device_ids[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE);
+		max_device_alloc = piglit_cl_get_device_info(env->context->device_ids[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE);
 		if(*max_device_alloc > max_alloc) {
 			max_alloc = *max_device_alloc;
 		}
@@ -304,7 +304,7 @@ piglit_cl_test(const int argc,
 		free(max_device_alloc);
 	}
 	
-	test(env->context.cl_ctx,
+	test(env->context->cl_ctx,
 	     CL_MEM_READ_WRITE,
 	     max_alloc+1, // if we get to overflow, we're back at 0 and errNo must be the same
 	     NULL,
@@ -317,13 +317,13 @@ piglit_cl_test(const int argc,
 	 * NULL but CL_MEM_COPY_HOST_PTR or CL_MEM_USE_HOST_PTR are not
 	 * set in flags.
 	 */
-	test(env->context.cl_ctx, CL_MEM_USE_HOST_PTR, alloc_size, NULL,
+	test(env->context->cl_ctx, CL_MEM_USE_HOST_PTR, alloc_size, NULL,
 	     CL_INVALID_HOST_PTR, &result,
 	     "Trigger CL_INVALID_HOST_PTR if host_ptr is NULL and CL_MEM_USE_HOST_PTR is set in flags");
-	test(env->context.cl_ctx, CL_MEM_COPY_HOST_PTR, alloc_size, NULL,
+	test(env->context->cl_ctx, CL_MEM_COPY_HOST_PTR, alloc_size, NULL,
 	     CL_INVALID_HOST_PTR, &result,
 	     "Trigger CL_INVALID_HOST_PTR if host_ptr is NULL and CL_MEM_COPY_HOST_PTR is set in flags");
-	test(env->context.cl_ctx, CL_MEM_READ_WRITE, alloc_size, host_buffer,
+	test(env->context->cl_ctx, CL_MEM_READ_WRITE, alloc_size, host_buffer,
 	     CL_INVALID_HOST_PTR, &result,
 	     "Trigger CL_INVALID_HOST_PTR if host_ptr is not NULL CL_MEM_USE_HOST_PTR or CL_MEM_COPY_HOST_PTR are not set in flags");
 

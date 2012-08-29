@@ -57,7 +57,7 @@ piglit_cl_test(const int argc,
 
 	/*** Normal usage ***/
 
-	cl_mem memobj = clCreateBuffer(env->context.cl_ctx,
+	cl_mem memobj = clCreateBuffer(env->context->cl_ctx,
 	                               CL_MEM_READ_WRITE,
 	                               512,
 	                               NULL,

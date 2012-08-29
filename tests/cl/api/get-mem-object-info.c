@@ -65,7 +65,7 @@ piglit_cl_test(const int argc,
 	int num_mem_infos = PIGLIT_CL_ENUM_NUM(cl_mem_info, env->version);
 	const cl_mem_info* mem_infos = PIGLIT_CL_ENUM_ARRAY(cl_mem_info);
 	
-	memobj = clCreateBuffer(env->context.cl_ctx,
+	memobj = clCreateBuffer(env->context->cl_ctx,
 	                        CL_MEM_READ_WRITE,
 	                        512,
 	                        NULL,

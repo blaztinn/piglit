@@ -79,14 +79,14 @@ piglit_cl_test(const int argc,
 		// create an out buffer and fill it with zeroes
 		ptr_out = calloc(global_size[i], sizeof(cl_uint));
 		mem_out = piglit_cl_create_buffer(env->context, CL_MEM_WRITE_ONLY, global_size[i] * sizeof(cl_uint));
-		piglit_cl_write_buffer(env->context.command_queues[0], mem_out, 0, global_size[i] * sizeof(cl_uint), ptr_out);
+		piglit_cl_write_buffer(env->context->command_queues[0], mem_out, 0, global_size[i] * sizeof(cl_uint), ptr_out);
 
 		// set kernel args and run the kernel
 		piglit_cl_set_kernel_buffer_arg(env->kernel, 0, &mem_out);
-		piglit_cl_execute_ND_range_kernel(env->context.command_queues[0], env->kernel, i+1, global_size, global_size);
+		piglit_cl_execute_ND_range_kernel(env->context->command_queues[0], env->kernel, i+1, global_size, global_size);
 
 		// read back out buffer and check its values
-		piglit_cl_read_buffer(env->context.command_queues[0], mem_out, 0, global_size[i] * sizeof(cl_uint), ptr_out);
+		piglit_cl_read_buffer(env->context->command_queues[0], mem_out, 0, global_size[i] * sizeof(cl_uint), ptr_out);
 		for(j = 0; j < global_size[i]; j++) {
 			if(ptr_out[j] != j+1) {
 				printf("  At index %u, expecting %u, but got %u.\n", j, j+1, ptr_out[j]);

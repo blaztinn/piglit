@@ -100,7 +100,7 @@ piglit_cl_test(const int argc,
 		return PIGLIT_FAIL;
 	}
 
-	buffer = clCreateBuffer(env->context.cl_ctx,
+	buffer = clCreateBuffer(env->context->cl_ctx,
 	                        CL_MEM_READ_WRITE,
 	                        512,
 	                        NULL,
@@ -112,7 +112,7 @@ piglit_cl_test(const int argc,
 		return PIGLIT_FAIL;
 	}
 
-	sampler = clCreateSampler(env->context.cl_ctx,
+	sampler = clCreateSampler(env->context->cl_ctx,
 	                          CL_TRUE,
 	                          CL_ADDRESS_NONE,
 	                          CL_FILTER_NEAREST,

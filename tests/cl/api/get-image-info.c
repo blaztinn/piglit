@@ -82,7 +82,7 @@ piglit_cl_test(const int argc,
 			.buffer = NULL,
 		};
 
-		image = clCreateImage(env->context.cl_ctx,
+		image = clCreateImage(env->context->cl_ctx,
 		                      CL_MEM_READ_WRITE,
 		                      &image_format,
 		                      &image_desc,
@@ -94,7 +94,7 @@ piglit_cl_test(const int argc,
 	}
 #else //CL_VERSION_1_2
 	if(env->version <= 11) {
-		image = clCreateImage2D(env->context.cl_ctx,
+		image = clCreateImage2D(env->context->cl_ctx,
 		                        CL_MEM_READ_WRITE,
 		                        &image_format,
 		                        128, 128, 0,
