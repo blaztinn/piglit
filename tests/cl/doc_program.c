@@ -36,7 +36,7 @@ PIGLIT_CL_PROGRAM_TEST_CONFIG_BEGIN
 	config.program_binary_file = "test.bin";         // Create a program from file for each test (binary)
 	config.build_options = "-D DEF";      // Build options for the program
 	config.expect_build_fail = true;      // Expect that build will fail
-	config.kernel_name = "test"           // Create a kernel
+	config.kernel_name = "test";          // Create a kernel
 
 PIGLIT_CL_PROGRAM_TEST_CONFIG_END
 
